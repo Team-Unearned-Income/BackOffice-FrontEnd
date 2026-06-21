@@ -46,15 +46,27 @@
 
       <template #action="{ slotProps }">
         <q-btn flat dense no-caps color="primary" label="수정" @click="openEdit(slotProps.row)" />
-        <q-btn flat dense no-caps color="red" label="삭제" @click="confirmDelete(slotProps.row)" />
+        <q-btn flat dense no-caps color="red" label="삭제" @click="openDelete(slotProps.row)" />
       </template>
     </PageTable>
+
+    <!-- 추가/수정 폼 모달 -->
+    <LifePatternFormModal v-model:show="showForm" :pattern="editingPattern" @save="onFormSave" />
+
+    <!-- 삭제 확인 모달 (Soft Delete: 유저 응답 보존, 앱 비노출) -->
+    <ProcessConfirmModal
+      v-model:show="showDelete"
+      title="항목을 삭제할까요?"
+      :message="deleteMessage"
+      confirm-label="삭제"
+      confirm-color="red"
+      @confirm="onDeleteConfirm"
+    />
   </div>
 </template>
 
 <script setup>
-import { inject, onMounted, ref } from 'vue'
-import { useQuasar } from 'quasar'
+import { computed, inject, onMounted, ref } from 'vue'
 import COMMON from '@/constants/commonConstatns'
 import PageTable from '@/components/table/PageTable.vue'
 import TableSearch from '@/components/table/TableSearch.vue'
@@ -63,7 +75,6 @@ import LifePatternFormModal from './LifePatternFormModal.vue'
 import { TYPE_META, VISIBLE_META, HIDDEN_META, TYPE_FILTER_OPTIONS, badgeHtml } from './lifePatternMeta'
 
 const emitter = inject('emitter')
-const $q = useQuasar()
 
 /** 목업 생활패턴 항목 */
 const patterns = ref([
@@ -117,39 +128,45 @@ const clearSearch = () => {
   syncRows()
 }
 
-/** 추가 */
+/** 추가/수정 폼 모달 */
+const showForm = ref(false)
+const editingPattern = ref(null)
+
 const openCreate = () => {
-  $q.dialog({ component: LifePatternFormModal }).onOk((data) => {
+  editingPattern.value = null
+  showForm.value = true
+}
+const openEdit = (row) => {
+  editingPattern.value = row
+  showForm.value = true
+}
+const onFormSave = (data) => {
+  if (editingPattern.value) {
+    const target = patterns.value.find((p) => p.id === editingPattern.value.id)
+    if (target) Object.assign(target, data)
+  } else {
     const newId = Math.max(0, ...patterns.value.map((p) => p.id)) + 1
     patterns.value.push({ id: newId, ...data })
-    syncRows()
-  })
+  }
+  syncRows()
 }
 
-/** 수정 */
-const openEdit = (row) => {
-  $q.dialog({ component: LifePatternFormModal, componentProps: { pattern: row } }).onOk((data) => {
-    const target = patterns.value.find((p) => p.id === row.id)
-    if (target) Object.assign(target, data)
-    syncRows()
-  })
-}
+/** 삭제 확인 모달 */
+const showDelete = ref(false)
+const deleteTarget = ref(null)
+const deleteMessage = computed(() =>
+  deleteTarget.value
+    ? `"${deleteTarget.value.name}" 항목을 삭제합니다.\n기존 유저 응답 데이터는 유지되며\n앱에서 더 이상 노출되지 않습니다.`
+    : ''
+)
 
-/** 삭제 (Soft Delete: 유저 응답 보존, 앱 비노출) */
-const confirmDelete = (row) => {
-  $q.dialog({
-    component: ProcessConfirmModal,
-    componentProps: {
-      title: '항목을 삭제할까요?',
-      message: `"${row.name}" 항목을 삭제합니다.\n기존 유저 응답 데이터는 유지되며\n앱에서 더 이상 노출되지 않습니다.`,
-      requireReason: false,
-      confirmLabel: '삭제',
-      confirmColor: 'red'
-    }
-  }).onOk(() => {
-    patterns.value = patterns.value.filter((p) => p.id !== row.id)
-    syncRows()
-  })
+const openDelete = (row) => {
+  deleteTarget.value = row
+  showDelete.value = true
+}
+const onDeleteConfirm = () => {
+  patterns.value = patterns.value.filter((p) => p.id !== deleteTarget.value.id)
+  syncRows()
 }
 
 onMounted(() => {

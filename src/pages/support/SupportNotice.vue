@@ -32,7 +32,7 @@
 
       <template #action="{ slotProps }">
         <q-btn flat dense no-caps color="primary" label="수정" @click="editNotice(slotProps.row)" />
-        <q-btn flat dense no-caps color="red" label="삭제" @click="deleteNotice(slotProps.row)" />
+        <q-btn flat dense no-caps color="red" label="삭제" @click="openDelete(slotProps.row)" />
       </template>
     </PageTable>
 
@@ -58,24 +58,39 @@
           <q-checkbox v-model="form.immediate" label="즉시 노출" />
           <div class="q-gutter-sm">
             <q-btn label="취소" color="grey-7" outline @click="closeForm" />
-            <q-btn label="등록" color="dark" unelevated text-color="white" @click="submitNotice" />
+            <q-btn
+              label="등록"
+              color="dark"
+              unelevated
+              text-color="white"
+              :disable="!form.title.trim()"
+              @click="submitNotice"
+            />
           </div>
         </div>
       </q-card>
     </q-slide-transition>
+
+    <!-- 삭제 확인 모달 -->
+    <ProcessConfirmModal
+      v-model:show="showDelete"
+      title="공지 삭제"
+      :message="deleteMessage"
+      confirm-label="삭제"
+      confirm-color="red"
+      @confirm="onDeleteConfirm"
+    />
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
-import { useQuasar } from 'quasar'
-import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
+import { computed, onMounted, ref } from 'vue'
 import PageTable from '@/components/table/PageTable.vue'
 import TableSearch from '@/components/table/TableSearch.vue'
+import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
 import { VISIBILITY_META, badgeHtml } from './supportMeta'
 
 const MOCK_TODAY = '2025.06.08'
-const $q = useQuasar()
 
 /** 목업 공지 데이터 */
 const notices = ref([
@@ -156,21 +171,23 @@ const editNotice = (row) => {
   showForm.value = true
 }
 
-const deleteNotice = (row) => {
-  $q.dialog({
-    component: AlarmDialog,
-    componentProps: { title: '공지 삭제', message: `"${row.title}" 공지를 삭제하시겠어요?`, cancel: true }
-  }).onOk(() => {
-    notices.value = notices.value.filter((n) => n.id !== row.id)
-    syncRows()
-  })
+/** 삭제 확인 모달 */
+const showDelete = ref(false)
+const deleteTarget = ref(null)
+const deleteMessage = computed(() =>
+  deleteTarget.value ? `"${deleteTarget.value.title}" 공지를 삭제하시겠어요?` : ''
+)
+const openDelete = (row) => {
+  deleteTarget.value = row
+  showDelete.value = true
+}
+const onDeleteConfirm = () => {
+  notices.value = notices.value.filter((n) => n.id !== deleteTarget.value.id)
+  syncRows()
 }
 
 const submitNotice = () => {
-  if (!form.value.title.trim()) {
-    $q.dialog({ component: AlarmDialog, componentProps: { title: '알림', message: '제목을 입력해주세요.' } })
-    return
-  }
+  if (!form.value.title.trim()) return
   const status = form.value.immediate ? 'visible' : 'hidden'
   if (editingId.value) {
     const target = notices.value.find((n) => n.id === editingId.value)

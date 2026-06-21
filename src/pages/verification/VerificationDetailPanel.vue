@@ -32,18 +32,38 @@
     <!-- 4. 처리 액션 -->
     <div class="panel-section-title q-mt-md">처리 액션</div>
     <div class="q-gutter-sm">
-      <q-btn label="승인" color="dark" unelevated text-color="white" @click="onApprove" />
-      <q-btn label="반려" class="bg-red-1 text-bold" color="red" outline @click="onReject" />
+      <q-btn label="승인" color="dark" unelevated text-color="white" @click="showApprove = true" />
+      <q-btn label="반려" class="bg-red-1 text-bold" color="red" outline @click="showReject = true" />
     </div>
     <div class="text-caption text-grey-6 q-mt-sm">
       학교: .ac.kr / .edu 도메인 확인 · 회사: gmail / naver 등 개인 이메일 제외
     </div>
+
+    <!-- 처리 확인 모달 -->
+    <ProcessConfirmModal
+      v-model:show="showApprove"
+      title="인증을 승인할까요?"
+      message="인증 배지 부여 + 완료 알림이 발송됩니다."
+      confirm-label="승인"
+      confirm-color="dark"
+      @confirm="onApproveConfirm"
+    />
+    <ProcessConfirmModal
+      v-model:show="showReject"
+      title="반려 사유를 입력해주세요"
+      :message="`${request.member} (#${request.memberId}) ${typeMeta.label} 이메일 인증 요청을 반려합니다.\n사유는 유저에게 알림으로 전송됩니다.`"
+      require-reason
+      reason-label="반려 사유 (필수)"
+      placeholder="반려 사유를 입력해주세요 (예: 개인 이메일 형식입니다)"
+      confirm-label="반려 처리"
+      confirm-color="red"
+      @confirm="onRejectConfirm"
+    />
   </q-card>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useQuasar } from 'quasar'
+import { computed, ref } from 'vue'
 import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
 import { TYPE_META } from './verificationMeta'
 
@@ -56,39 +76,15 @@ const props = defineProps({
 
 const emit = defineEmits(['approve', 'reject'])
 
-const $q = useQuasar()
-
 const typeMeta = computed(() => TYPE_META[props.request.type])
 
-/** 승인: 별도 입력 없이 즉시 처리 (간단 확인) */
-const onApprove = () => {
-  $q.dialog({
-    component: ProcessConfirmModal,
-    componentProps: {
-      title: '인증을 승인할까요?',
-      message: '인증 배지 부여 + 완료 알림이 발송됩니다.',
-      requireReason: false,
-      confirmLabel: '승인',
-      confirmColor: 'dark'
-    }
-  }).onOk(() => emit('approve'))
-}
+/** 모달 표시 상태 */
+const showApprove = ref(false)
+const showReject = ref(false)
 
-/** 반려: 사유 필수 입력 모달 */
-const onReject = () => {
-  $q.dialog({
-    component: ProcessConfirmModal,
-    componentProps: {
-      title: '반려 사유를 입력해주세요',
-      message: `${props.request.member} (#${props.request.memberId}) ${typeMeta.value.label} 이메일 인증 요청을 반려합니다.\n사유는 유저에게 알림으로 전송됩니다.`,
-      requireReason: true,
-      reasonLabel: '반려 사유 (필수)',
-      placeholder: '반려 사유를 입력해주세요 (예: 개인 이메일 형식입니다)',
-      confirmLabel: '반려 처리',
-      confirmColor: 'red'
-    }
-  }).onOk((reason) => emit('reject', reason))
-}
+/** 확인 핸들러 (추후 API 호출 연결 지점) */
+const onApproveConfirm = () => emit('approve')
+const onRejectConfirm = (reason) => emit('reject', reason)
 </script>
 
 <style scoped lang="scss">

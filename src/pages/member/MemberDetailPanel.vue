@@ -1,14 +1,14 @@
 <template>
   <q-card class="member-detail-panel column no-wrap">
     <!-- 헤더 -->
-    <q-card-section class="row items-center justify-between bg-grey-2 q-py-md">
+    <q-card-section class="row items-center justify-between bg-grey-2 q-py-md q-px-lg">
       <div class="text-h6 text-bold">회원 상세 — {{ member.name }} (#{{ member.id }})</div>
       <q-btn flat round dense icon="close" @click="$emit('close')" />
     </q-card-section>
     <q-separator />
 
     <!-- 본문 (스크롤) -->
-    <q-card-section class="col scroll q-gutter-y-lg">
+    <q-card-section class="col scroll q-gutter-y-lg q-px-lg">
       <!-- 1. 기본 정보 -->
       <div>
         <div class="panel-section-title">기본 정보</div>
@@ -65,14 +65,14 @@
             class="bg-amber-1 text-bold"
             color="amber-8"
             outline
-            @click="onGrant"
+            @click="showGrant = true"
           />
           <q-btn
             v-else-if="member.role === 'admin' && !isSelf"
             label="admin 권한 회수"
             color="grey-8"
             outline
-            @click="onRevoke"
+            @click="showRevoke = true"
           />
           <div v-if="member.role === 'admin' && isSelf" class="text-caption text-grey-6">
             본인 계정은 권한을 회수할 수 없습니다.
@@ -89,30 +89,65 @@
 
     <q-separator />
     <!-- 5. 액션 (상태에 따라 변경) -->
-    <q-card-actions align="right" class="q-pa-md">
+    <q-card-actions align="right" class="q-px-lg q-py-md">
       <q-btn
         v-if="member.status === 'active'"
         label="정지"
         class="bg-red-1 text-bold"
         color="red"
         outline
-        @click="onSuspend"
+        @click="showSuspend = true"
       />
       <q-btn
         v-else-if="member.status === 'suspended'"
         label="정지 해제"
         color="primary"
         outline
-        @click="onUnsuspend"
+        @click="showUnsuspend = true"
       />
     </q-card-actions>
+
+    <!-- 처리 확인 모달 (BasicConfirm 기반 공통 모달) -->
+    <ProcessConfirmModal
+      v-model:show="showSuspend"
+      title="회원을 정지하시겠어요?"
+      :message="`${member.name} (#${member.id})을 무기한 정지합니다.\n정지 즉시 앱 로그인이 불가합니다.`"
+      require-reason
+      reason-label="정지 사유 (필수)"
+      confirm-label="정지 처리"
+      confirm-color="red"
+      @confirm="onSuspendConfirm"
+    />
+    <ProcessConfirmModal
+      v-model:show="showUnsuspend"
+      title="정지 해제"
+      :message="`${member.name} (#${member.id}) 회원의 정지를 해제하시겠어요?`"
+      confirm-label="정지 해제"
+      confirm-color="dark"
+      @confirm="onUnsuspendConfirm"
+    />
+    <ProcessConfirmModal
+      v-model:show="showGrant"
+      title="admin 권한을 부여할까요?"
+      :message="`${member.name} (#${member.id})에게 관리자 권한을 부여합니다.\n해당 계정은 BO에 접근할 수 있게 됩니다.`"
+      :warning="`⚠ 관리자 권한은 신중하게 부여해주세요.\nBO의 모든 기능에 접근 가능합니다.`"
+      confirm-label="권한 부여"
+      confirm-color="amber"
+      @confirm="onGrantConfirm"
+    />
+    <ProcessConfirmModal
+      v-model:show="showRevoke"
+      title="admin 권한 회수"
+      :message="`${member.name} (#${member.id}) 회원의 admin 권한을 회수하시겠어요?`"
+      confirm-label="회수"
+      confirm-color="dark"
+      @confirm="onRevokeConfirm"
+    />
   </q-card>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useQuasar } from 'quasar'
-import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
+import { computed, ref } from 'vue'
 import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
 import { STATUS_META, VERIFY_META, ROLE_META } from './memberMeta'
 
@@ -127,8 +162,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'suspend', 'unsuspend', 'grant', 'revoke'])
-
-const $q = useQuasar()
 
 const statusMeta = computed(() => STATUS_META[props.member.status])
 const verifyMeta = computed(() => VERIFY_META[props.member.verify])
@@ -145,59 +178,17 @@ const basicInfo = computed(() => [
   { label: '가입일', value: props.member.joinDate }
 ])
 
-/** 정지: 사유 필수 입력 모달 */
-const onSuspend = () => {
-  $q.dialog({
-    component: ProcessConfirmModal,
-    componentProps: {
-      title: '회원을 정지하시겠어요?',
-      message: `${props.member.name} (#${props.member.id})을 무기한 정지합니다.\n정지 즉시 앱 로그인이 불가합니다.`,
-      requireReason: true,
-      reasonLabel: '정지 사유 (필수)',
-      confirmLabel: '정지 처리',
-      confirmColor: 'red'
-    }
-  }).onOk((reason) => emit('suspend', reason))
-}
+/** 모달 표시 상태 */
+const showSuspend = ref(false)
+const showUnsuspend = ref(false)
+const showGrant = ref(false)
+const showRevoke = ref(false)
 
-/** 정지 해제: 간단 확인 */
-const onUnsuspend = () => {
-  $q.dialog({
-    component: AlarmDialog,
-    componentProps: {
-      title: '정지 해제',
-      message: `${props.member.name} (#${props.member.id}) 회원의 정지를 해제하시겠어요?`,
-      cancel: true
-    }
-  }).onOk(() => emit('unsuspend'))
-}
-
-/** admin 권한 부여: 경고 모달 */
-const onGrant = () => {
-  $q.dialog({
-    component: ProcessConfirmModal,
-    componentProps: {
-      title: 'admin 권한을 부여할까요?',
-      message: `${props.member.name} (#${props.member.id})에게 관리자 권한을 부여합니다.\n해당 계정은 BO에 접근할 수 있게 됩니다.`,
-      warning: '⚠ 관리자 권한은 신중하게 부여해주세요.\nBO의 모든 기능에 접근 가능합니다.',
-      requireReason: false,
-      confirmLabel: '권한 부여',
-      confirmColor: 'amber'
-    }
-  }).onOk(() => emit('grant'))
-}
-
-/** admin 권한 회수: 간단 확인 */
-const onRevoke = () => {
-  $q.dialog({
-    component: AlarmDialog,
-    componentProps: {
-      title: 'admin 권한 회수',
-      message: `${props.member.name} (#${props.member.id}) 회원의 admin 권한을 회수하시겠어요?`,
-      cancel: true
-    }
-  }).onOk(() => emit('revoke'))
-}
+/** 확인 핸들러 (추후 API 호출 연결 지점) */
+const onSuspendConfirm = (reason) => emit('suspend', reason)
+const onUnsuspendConfirm = () => emit('unsuspend')
+const onGrantConfirm = () => emit('grant')
+const onRevokeConfirm = () => emit('revoke')
 </script>
 
 <style scoped lang="scss">

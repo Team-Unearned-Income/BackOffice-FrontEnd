@@ -1,14 +1,14 @@
 <template>
   <q-card class="post-detail-panel column no-wrap">
     <!-- 헤더 -->
-    <q-card-section class="row items-center justify-between bg-grey-2 q-py-md">
+    <q-card-section class="row items-center justify-between bg-grey-2 q-py-md q-px-lg">
       <div class="text-h6 text-bold">게시글 상세 — #{{ post.id }}</div>
       <q-btn flat round dense icon="close" @click="$emit('close')" />
     </q-card-section>
     <q-separator />
 
     <!-- 본문 (스크롤) -->
-    <q-card-section class="col scroll q-gutter-y-lg">
+    <q-card-section class="col scroll q-gutter-y-lg q-px-lg">
       <!-- 1. 대표 이미지 -->
       <div>
         <div class="panel-section-title">대표 이미지</div>
@@ -38,14 +38,14 @@
 
     <q-separator />
     <!-- 3. 액션 (노출 상태에 따라 변경) -->
-    <q-card-actions align="left" class="q-pa-md q-gutter-sm">
+    <q-card-actions align="left" class="q-px-lg q-py-md q-gutter-sm">
       <q-btn
         v-if="post.status === 'visible'"
         label="비공개"
         class="bg-red-1 text-bold"
         color="red"
         outline
-        @click="onHide"
+        @click="showHide = true"
       />
       <q-btn
         v-if="post.status === 'hidden'"
@@ -53,16 +53,51 @@
         color="dark"
         unelevated
         text-color="white"
-        @click="onRepublish"
+        @click="showRepublish = true"
       />
-      <q-btn label="삭제" class="bg-red-1 text-bold" color="red" outline @click="onRemove" />
+      <q-btn
+        label="삭제"
+        class="bg-red-1 text-bold"
+        color="red"
+        outline
+        @click="showRemove = true"
+      />
     </q-card-actions>
+
+    <!-- 처리 확인 모달 -->
+    <ProcessConfirmModal
+      v-model:show="showHide"
+      title="게시글을 비공개할까요?"
+      message="작성자에게 사유가 알림으로 전송됩니다."
+      require-reason
+      reason-label="비공개 사유 (필수)"
+      confirm-label="비공개"
+      confirm-color="red"
+      @confirm="onHideConfirm"
+    />
+    <ProcessConfirmModal
+      v-model:show="showRepublish"
+      title="게시글을 재노출할까요?"
+      message="비공개 처리된 게시글을 다시 노출합니다."
+      confirm-label="재노출"
+      confirm-color="dark"
+      @confirm="onRepublishConfirm"
+    />
+    <ProcessConfirmModal
+      v-model:show="showRemove"
+      title="게시글을 삭제할까요?"
+      :message="`삭제 후 복구 불가.\n작성자에게 알림 전송.`"
+      require-reason
+      reason-label="삭제 사유 (필수)"
+      confirm-label="삭제"
+      confirm-color="red"
+      @confirm="onRemoveConfirm"
+    />
   </q-card>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useQuasar } from 'quasar'
+import { computed, ref } from 'vue'
 import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
 import { POST_STATUS_META } from './postMeta'
 
@@ -74,8 +109,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'hide', 'republish', 'remove'])
-
-const $q = useQuasar()
 
 const statusMeta = computed(() => POST_STATUS_META[props.post.status])
 
@@ -89,49 +122,15 @@ const info = computed(() => [
   { label: '조회수', value: `${props.post.views}회` }
 ])
 
-/** 비공개: 사유 필수 모달 */
-const onHide = () => {
-  $q.dialog({
-    component: ProcessConfirmModal,
-    componentProps: {
-      title: '게시글을 비공개할까요?',
-      message: '작성자에게 사유가 알림으로 전송됩니다.',
-      requireReason: true,
-      reasonLabel: '비공개 사유 (필수)',
-      confirmLabel: '비공개',
-      confirmColor: 'red'
-    }
-  }).onOk((reason) => emit('hide', reason))
-}
+/** 모달 표시 상태 */
+const showHide = ref(false)
+const showRepublish = ref(false)
+const showRemove = ref(false)
 
-/** 재노출: 간단 확인 (사유 불필요) */
-const onRepublish = () => {
-  $q.dialog({
-    component: ProcessConfirmModal,
-    componentProps: {
-      title: '게시글을 재노출할까요?',
-      message: '비공개 처리된 게시글을 다시 노출합니다.',
-      requireReason: false,
-      confirmLabel: '재노출',
-      confirmColor: 'dark'
-    }
-  }).onOk(() => emit('republish'))
-}
-
-/** 삭제: 사유 필수 모달 (복구 불가) */
-const onRemove = () => {
-  $q.dialog({
-    component: ProcessConfirmModal,
-    componentProps: {
-      title: '게시글을 삭제할까요?',
-      message: '삭제 후 복구 불가.\n작성자에게 알림 전송.',
-      requireReason: true,
-      reasonLabel: '삭제 사유 (필수)',
-      confirmLabel: '삭제',
-      confirmColor: 'red'
-    }
-  }).onOk((reason) => emit('remove', reason))
-}
+/** 확인 핸들러 (추후 API 호출 연결 지점) */
+const onHideConfirm = (reason) => emit('hide', reason)
+const onRepublishConfirm = () => emit('republish')
+const onRemoveConfirm = (reason) => emit('remove', reason)
 </script>
 
 <style scoped lang="scss">

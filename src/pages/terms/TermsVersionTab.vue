@@ -86,12 +86,12 @@
     <!-- 내용 보기 모달 -->
     <q-dialog v-model="showView">
       <q-card style="width: 620px; max-width: 90vw">
-        <q-card-section class="row items-center justify-between bg-grey-2">
+        <q-card-section class="row items-center justify-between bg-grey-2 q-px-lg">
           <div class="text-h6 text-bold">{{ viewing?.version }} 내용</div>
           <q-btn v-close-popup flat round dense icon="close" />
         </q-card-section>
         <q-separator />
-        <q-card-section class="terms-body" v-html="viewing?.body" />
+        <q-card-section class="terms-body q-px-lg" v-html="viewing?.body" />
       </q-card>
     </q-dialog>
   </div>

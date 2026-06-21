@@ -1,14 +1,14 @@
 <template>
   <q-card class="inquiry-detail-panel column no-wrap">
     <!-- 헤더 -->
-    <q-card-section class="row items-center justify-between bg-grey-2 q-py-md">
+    <q-card-section class="row items-center justify-between bg-grey-2 q-py-md q-px-lg">
       <div class="text-h6 text-bold">문의 상세 — #{{ inquiry.id }}</div>
       <q-btn flat round dense icon="close" @click="$emit('close')" />
     </q-card-section>
     <q-separator />
 
     <!-- 본문 (스크롤) -->
-    <q-card-section class="col scroll q-gutter-y-lg">
+    <q-card-section class="col scroll q-gutter-y-lg q-px-lg">
       <!-- 1. 문의 정보 -->
       <div>
         <div class="panel-section-title">문의 정보</div>
@@ -62,7 +62,7 @@
     <!-- 전송 (미답변일 때만) -->
     <template v-if="!isAnswered">
       <q-separator />
-      <q-card-actions align="right" class="q-pa-md">
+      <q-card-actions align="right" class="q-px-lg q-py-md">
         <q-btn
           label="답변 전송"
           color="dark"
