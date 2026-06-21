@@ -8,6 +8,8 @@ import postRoutes from '/src/pages/post/routes.js'
 import reportRoutes from '/src/pages/report/routes.js'
 import verificationRoutes from '/src/pages/verification/routes.js'
 import supportRoutes from '/src/pages/support/routes.js'
+import lifePatternRoutes from '/src/pages/lifePattern/routes.js'
+import termsRoutes from '/src/pages/terms/routes.js'
 
 // 기존 seoulland 라우트 (LNB 미노출, 추후 정리 예정)
 import operateRoutes from '/src/pages/operate/routes.js'
@@ -38,6 +40,8 @@ const routes = [
       ...reportRoutes,
       ...verificationRoutes,
       ...supportRoutes,
+      ...lifePatternRoutes,
+      ...termsRoutes,
       ...operateRoutes,
       ...showRoutes,
       ...facilitiesRoutes,

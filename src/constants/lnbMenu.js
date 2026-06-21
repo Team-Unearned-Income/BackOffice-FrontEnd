@@ -17,7 +17,9 @@ const lnbMenu = [
   { key: 'posts', menuName: '게시글 관리', icon: 'article', url: '/posts' },
   { key: 'reports', menuName: '신고 관리', icon: 'report', url: '/reports' },
   { key: 'verification', menuName: '신원 인증', icon: 'verified_user', url: '/verification' },
-  { key: 'support', menuName: '고객센터', icon: 'support_agent', url: '/support' }
+  { key: 'support', menuName: '고객센터', icon: 'support_agent', url: '/support' },
+  { key: 'lifePattern', menuName: '생활패턴', icon: 'tune', url: '/life-pattern' },
+  { key: 'terms', menuName: '약관관리', icon: 'gavel', url: '/terms' }
 ]
 
 export default lnbMenu
