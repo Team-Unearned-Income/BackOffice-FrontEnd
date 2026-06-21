@@ -28,7 +28,6 @@
   <script setup>
   import { onMounted, ref, onBeforeUnmount, inject, computed} from 'vue'
   import { useRoute } from 'vue-router'
-  import {marketingApi} from '@/service/api'
   import QrCode from '@/components/input/QRCode.vue'
   import COMMON from '@/constants/commonConstatns.js'
 

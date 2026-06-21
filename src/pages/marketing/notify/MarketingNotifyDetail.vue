@@ -173,7 +173,6 @@
 <script setup>
 import { computed, inject, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { marketingApi } from '@/service/api'
 import DoubleDateInput from '@/components/input/DoubleDateInput.vue'
 import DateInput from '@/components/input/DateInput.vue'
 import COMMON from '@/constants/commonConstatns.js'

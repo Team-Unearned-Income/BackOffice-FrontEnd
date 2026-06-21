@@ -21,7 +21,6 @@ import { inject, nextTick, onBeforeMount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import COMMON from '@/constants/commonConstatns.js'
 import PageTable from '@/components/table/PageTable.vue'
-import { pushApi } from '@/service/api'
 import TableUtils from '@/utils/TableUtils.js'
 import { previousQueryUrl } from '@/router'
 const route = useRoute()

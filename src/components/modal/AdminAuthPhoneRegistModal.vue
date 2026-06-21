@@ -101,7 +101,6 @@
 <script setup>
 import {ref, watch} from 'vue'
 import BasicConfirm from './BasicConfirm.vue'
-import {authApi} from '@/service/api'
 import RegistToast from "@/components/dialog/RegistToast.vue";
 
 const tableRef = ref(null)

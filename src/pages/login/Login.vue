@@ -42,7 +42,6 @@
 <script setup>
 import { inject, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { authApi } from '@/service/api'
 import COMMON from '@/constants/commonConstatns.js'
 import seoullandAppLogo from '@/assets/images/seoulland_app_logo.png'
 

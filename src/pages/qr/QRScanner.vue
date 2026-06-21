@@ -48,7 +48,6 @@
 import { ref } from 'vue'
 import { QrcodeStream } from 'vue-qrcode-reader'
 import RegistToast from '@/components/dialog/RegistToast.vue'
-import { qrcodeApi } from '@/service/api'
 
 const constraints = ref({ facingMode: 'environment' })
 const qrList = ref([])

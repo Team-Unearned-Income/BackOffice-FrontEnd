@@ -29,7 +29,6 @@ const getInitialFilter = () => ({
 <script setup>
 import { inject, nextTick, onBeforeMount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { pushApi } from '@/service/api'
 import COMMON from '@/constants/commonConstatns.js'
 import PageTable from '@/components/table/PageTable.vue'
 import FilterUtils from '@/utils/FilterUtils.js'

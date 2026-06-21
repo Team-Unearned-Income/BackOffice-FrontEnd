@@ -73,7 +73,6 @@ const getInitialFilter = () => ({
 <script setup>
 import { inject, nextTick, onBeforeMount, onMounted, watch, ref } from 'vue'
 import DoubleDateInput from '@/components/input/DoubleDateInput.vue'
-import { sitemanagementApi } from '@/service/api'
 import COMMON from '@/constants/commonConstatns.js'
 import PageTable from '@/components/table/PageTable.vue'
 import TableSearch from '@/components/table/TableSearch.vue'

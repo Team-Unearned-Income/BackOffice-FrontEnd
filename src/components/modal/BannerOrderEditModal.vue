@@ -94,7 +94,6 @@ import BasicConfirm from './BasicConfirm.vue'
 import { cloneDeep } from 'lodash-es'
 import COMMON from '@/constants/commonConstatns.js'
 import RegistToast from '@/components/dialog/RegistToast.vue'
-import { sitemanagementApi } from '@/service/api'
 
 const showToast = ref(false)
 

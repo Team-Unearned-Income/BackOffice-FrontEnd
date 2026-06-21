@@ -55,7 +55,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { ref, onBeforeMount, inject, nextTick } from 'vue'
-import { guidemapApi } from '@/service/api'
 import FileInput from '@/components/input/FileInput.vue'
 import COMMON from '@/constants/commonConstatns.js'
 import RegistToast from '@/components/dialog/RegistToast.vue'

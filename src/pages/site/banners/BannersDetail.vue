@@ -204,7 +204,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { computed, nextTick, onBeforeMount, onMounted, ref } from 'vue'
-import { sitemanagementApi } from '@/service/api'
 import FilterUtils from '@/utils/FilterUtils.js'
 import DateInput from '@/components/input/DateInput.vue'
 import ImageInput from '@/components/input/ImageInput.vue'

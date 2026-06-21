@@ -177,7 +177,6 @@
 </template>
 <script setup>
 import { ref, nextTick, onBeforeMount, onMounted, computed, inject } from 'vue'
-import { sitemanagementApi } from '@/service/api'
 import COMMON from '@/constants/commonConstatns.js'
 import RegistToast from '@/components/dialog/RegistToast.vue'
 import { cloneDeep } from 'lodash-es'

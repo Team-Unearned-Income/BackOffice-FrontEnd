@@ -30,7 +30,6 @@
 <script setup>
 import { ref, onBeforeMount, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { authApi, marketingApi } from '@/service/api'
 import QrCode from '@/components/input/QRCode.vue'
 import printJS from 'print-js'
 import { useLayoutStore } from '@/stores/layout.js'

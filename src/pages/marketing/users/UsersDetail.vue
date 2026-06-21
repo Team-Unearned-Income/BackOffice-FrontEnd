@@ -183,7 +183,6 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
 import { computed, nextTick, onBeforeMount, onMounted, ref } from 'vue'
-import { marketingApi } from '@/service/api'
 import DateUtils from '@/utils/DateUtils'
 import { REGEX } from '@/constants/regualExpression'
 import RegistToast from '@/components/dialog/RegistToast.vue'

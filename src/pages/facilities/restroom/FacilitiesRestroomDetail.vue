@@ -117,7 +117,6 @@
 <script setup>
 import { inject, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { facilitiesApi } from '@/service/api'
 import COMMON from '@/constants/commonConstatns.js'
 import MapView from '@/components/input/MapView.vue'
 import RegistToast from '@/components/dialog/RegistToast.vue'
