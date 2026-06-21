@@ -40,7 +40,6 @@
 
 <script setup>
 import { ref, onBeforeMount, onMounted } from 'vue'
-import { searchApi } from '@/service/api'
 import RegistToast from '@/components/dialog/RegistToast.vue'
 
 const showToast = ref(false)

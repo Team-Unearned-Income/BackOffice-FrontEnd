@@ -96,7 +96,6 @@
 
 <script setup>
 import { ref, onBeforeMount, onMounted } from 'vue'
-import { sitemanagementApi } from '@/service/api'
 import RegistToast from '@/components/dialog/RegistToast.vue'
 
 const showToast = ref(false)

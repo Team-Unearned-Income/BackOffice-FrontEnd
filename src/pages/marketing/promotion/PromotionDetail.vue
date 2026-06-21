@@ -394,7 +394,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { computed, inject, nextTick, onMounted, ref } from 'vue'
-import { ticketApi } from '@/service/api'
 import COMMON from '@/constants/commonConstatns.js'
 import FilterUtils from '@/utils/FilterUtils.js'
 import HtmlEditor from '@/components/input/HtmlEditor.vue'

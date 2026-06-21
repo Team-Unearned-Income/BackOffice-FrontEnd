@@ -12,7 +12,6 @@
 <script setup>
 import { ref } from 'vue'
 import { useQuasar } from 'quasar'
-import { marketingApi, ticketApi } from '@/service/api'
 
 const qDefault = useQuasar()
 const emit = defineEmits(['update:model-value', 'update:file-group-id'])

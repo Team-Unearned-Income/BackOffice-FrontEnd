@@ -145,7 +145,6 @@
 <script setup>
 import { computed, inject, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { facilitiesApi } from '@/service/api'
 import COMMON from '@/constants/commonConstatns.js'
 import DoubleDateInput from '@/components/input/DoubleDateInput.vue'
 import FilterUtils from '@/utils/FilterUtils.js'

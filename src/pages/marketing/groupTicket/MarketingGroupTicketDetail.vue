@@ -52,7 +52,6 @@
 <script setup>
 import { inject, nextTick, onBeforeMount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { marketingApi } from '@/service/api'
 import { previousQueryUrl } from '@/router'
 import COMMON from '@/constants/commonConstatns.js'
 import PageTable from '@/components/table/PageTable.vue'

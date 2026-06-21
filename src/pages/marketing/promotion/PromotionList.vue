@@ -191,7 +191,6 @@ const getInitialFilter = () => ({
 import { useRouter } from 'vue-router'
 import { inject, nextTick, onBeforeMount, onMounted, ref, watch } from 'vue'
 import DateInput from '@/components/input/DateInput.vue'
-import { ticketApi } from '@/service/api'
 import COMMON from '@/constants/commonConstatns.js'
 import PageTable from '@/components/table/PageTable.vue'
 import TableSearch from '@/components/table/TableSearch.vue'

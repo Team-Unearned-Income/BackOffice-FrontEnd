@@ -94,7 +94,6 @@ import FilterUtils from '@/utils/FilterUtils.js'
 import TableUtils from '@/utils/TableUtils.js'
 import TableSearch from '@/components/table/TableSearch.vue'
 import PageTable from '@/components/table/PageTable.vue'
-import { sitemanagementApi, ticketApi } from '@/service/api'
 
 const emitter = inject('emitter')
 const emit = defineEmits(['hide', 'modal-data-model', 'update:model-value'])

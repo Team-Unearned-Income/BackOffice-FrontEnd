@@ -129,7 +129,6 @@ import { ref, watch, onBeforeUpdate, onUnmounted, inject } from 'vue'
 import { cloneDeep } from 'lodash-es'
 import BasicConfirm from './BasicConfirm.vue'
 import RegistToast from '@/components/dialog/RegistToast.vue'
-import { authApi } from '@/service/api'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()

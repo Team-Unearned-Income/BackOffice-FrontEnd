@@ -6,7 +6,6 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { operatingApi } from '@/service/api'
 import CurrentReserve from '@/components/current/CurrentReserve.vue'
 
 const model = ref({

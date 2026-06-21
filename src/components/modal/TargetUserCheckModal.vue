@@ -23,7 +23,6 @@
 <script setup>
 import { inject, nextTick, onMounted, ref } from 'vue'
 import DateUtils from '@/utils/DateUtils'
-import { pushApi } from '@/service/api'
 import TableUtils from '@/utils/TableUtils.js'
 import { useRoute } from 'vue-router'
 import PageTable from '@/components/table/PageTable.vue'

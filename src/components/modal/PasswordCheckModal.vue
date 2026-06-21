@@ -48,7 +48,6 @@
 import { inject, onBeforeUpdate, ref } from 'vue'
 import BasicConfirm from './BasicConfirm.vue'
 import { cloneDeep } from 'lodash-es'
-import { sitemanagementApi } from '@/service/api'
 import COMMON from '@/constants/commonConstatns.js'
 import RegistToast from '@/components/dialog/RegistToast.vue'
 import { useAuthStore } from '@/stores/auth'
