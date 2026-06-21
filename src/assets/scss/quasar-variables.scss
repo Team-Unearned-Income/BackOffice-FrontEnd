@@ -1,0 +1,405 @@
+$base-font-size: 0.8rem;
+
+.q-table {
+  thead tr,
+  tbody td {
+    vertical-align: middle;
+    font-size: $base-font-size;
+    font-family: NanumSquareNeo, sans-serif !important;
+    height: 36px;
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__sort-icon--center {
+    margin-right: -18px;
+  }
+
+  thead {
+    position: sticky;
+    z-index: 1;
+    background-color: #f3f3f3;
+    border-bottom: 1px solid #ddd;
+    top: 0;
+
+    tr th {
+      font-weight: bold;
+      text-align: center;
+    }
+
+    tr:first-child {
+      th:last-child {
+        border-right: 1px solid #ddd;
+      }
+    }
+
+    tr:nth-child(2) {
+      th:first-child {
+        border-left: 1px solid #ddd;
+      }
+
+      th:last-child {
+        border-right: 1px solid #ddd;
+      }
+    }
+  }
+
+  tbody:empty {
+    width: 100%;
+    height: calc(100% - 80px);
+    position: absolute;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    &::before {
+      content: '데이터가 없습니다.';
+      color: #767778;
+      font-size: 0.8rem;
+      font-weight: 400;
+      line-height: 1.25rem;
+      letter-spacing: 0.01786em;
+    }
+  }
+
+  &__middle {
+    border-top: 1px solid rgb(95, 96, 97);
+    border-bottom: 1px solid rgb(186, 186, 186);
+  }
+
+  &__top {
+    padding: 16px 8px 5px 8px;
+  }
+
+  &__bottom {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+  }
+
+  &--cell-separator {
+    tbody {
+      tr {
+        > td {
+          border-bottom-width: 1px;
+        }
+      }
+    }
+  }
+
+  .q-btn--rectangle {
+    min-width: auto;
+    min-height: 2em;
+    padding: 4px 16px;
+  }
+}
+
+.q-tab {
+  &__label {
+    font-size: 18px;
+    font-weight: 700;
+    padding: 10px;
+  }
+}
+
+.q-date,
+.q-editor,
+.q-editor__toolbar-group {
+  .q-btn {
+    min-width: auto;
+    min-height: 2em;
+    padding: inherit;
+  }
+}
+
+.q-btn {
+  &--rectangle {
+    min-height: 40px;
+    min-width: 80px;
+    padding: 5px 15px;
+  }
+
+  &--outline {
+    font-weight: 500;
+    font-size: 14px;
+
+    &::before {
+      border: 1px solid #bababb;
+    }
+
+    &.text-red {
+      &::before {
+        border: 1px solid #ff5858 !important;
+      }
+    }
+  }
+
+  &.disabled {
+    opacity: 0.4 !important;
+    color: #bababb !important;
+  }
+}
+
+.q-field {
+  font-size: $base-font-size;
+
+  .q-placeholder::placeholder {
+    color: lightgray;
+  }
+
+  &--disabled {
+    background: #f3f4f5;
+
+    & .q-field__bottom {
+      background: white;
+    }
+  }
+}
+
+.q-checkbox {
+  width: 100%;
+
+  &__inner {
+    font-size: 25px;
+  }
+
+  &__label {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    word-break: break-all;
+  }
+}
+
+.q-dialog {
+  .q-card {
+    padding: 5px;
+
+    .modal-content {
+      height: calc(100% - 140px);
+
+      .q-tab-panel {
+        padding: 5px;
+      }
+    }
+  }
+}
+
+.q-tree {
+  &__node {
+    &--selected &-header-content {
+      color: #000;
+    }
+
+    .q-checkbox {
+      width: auto;
+
+      &__inner {
+        font-size: 40px !important;
+      }
+    }
+
+    &-header-content {
+      .row {
+        > div:first-child {
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          word-break: break-all;
+        }
+
+        > div:last-child {
+          position: absolute;
+          right: 0;
+        }
+      }
+    }
+  }
+
+  .q-focus-helper:hover {
+    padding-left: 20px;
+  }
+}
+
+.q-focus-helper {
+  cursor: pointer !important;
+}
+
+.q-btn-item {
+  .q-btn__content {
+    .block {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      word-break: break-all;
+    }
+  }
+}
+
+.q-dialog-plugin {
+  .q-dialog__title {
+    font-weight: bold;
+    font-size: 1.25rem;
+    line-height: 2rem;
+    letter-spacing: 0.0125em;
+  }
+}
+
+.q-drawer {
+  &--left {
+    .q-list {
+      .q-router-link--active {
+        color: black;
+        font-weight: bold;
+        background: #dbe7ff;
+      }
+
+      .q-item {
+        min-height: 36px;
+        padding: 8px;
+
+        &__section--avatar {
+          min-width: 20px;
+        }
+
+        &__section--side {
+          padding-right: 10px;
+        }
+
+        &--active {
+          color: black;
+          font-weight: bold;
+          background: #dbe7ff;
+        }
+      }
+
+      .q-ripple {
+        display: none;
+      }
+    }
+  }
+}
+
+.layout-detail {
+  .q-tab-panel {
+    padding: 16px;
+  }
+}
+
+.q-tab-panel {
+  padding: 0;
+}
+
+.q-field--standard .q-field__control:before {
+  border-bottom: none;
+}
+
+.q-field--standard.q-field--highlighted .q-field__control:after {
+  display: none;
+}
+
+.q-uploader {
+  &__header {
+    background-color: white;
+    color: black;
+  }
+}
+
+.q-badge {
+  height: 28px;
+  width: 100%;
+  justify-content: center;
+  font-weight: 700;
+
+  &--rounded {
+    height: auto;
+    width: auto;
+  }
+
+  &.bg-title {
+    font-weight: 200;
+    width: auto;
+    min-width: calc(3% + 10px);
+    height: 19px;
+    font-size: 11px;
+    line-height: 16px;
+    align-items: flex-start;
+  }
+}
+
+/* form col width 커스텀 */
+.form {
+  .form-th {
+    &.col-1 {
+      width: 14%;
+    }
+
+    &.col-5 {
+      width: 36%;
+    }
+
+    &.col-11 {
+      width: 86%;
+    }
+  }
+
+  .form-td {
+    &.col-1 {
+      width: 14%;
+    }
+
+    &.col-5 {
+      width: 36%;
+    }
+
+    &.col-11 {
+      width: 86%;
+    }
+  }
+}
+
+/**
+ * Container Common Quasar Custom CSS.
+ * Container 모듈만 적용할 Quasar Custom CSS(타 모듈 적용 제외할 CSS)
+ */
+.q-page-container {
+  background-color: #f4f6fa;
+}
+
+.hover-blue {
+  .q-focusable:focus > .q-focus-helper,
+  .q-hoverable:hover > .q-focus-helper {
+    background: #dbe7ff !important;
+    opacity: 0.3 !important;
+
+    &::before {
+      background: transparent !important;
+    }
+
+    &::after {
+      background: transparent !important;
+    }
+  }
+}
+
+.active-blue {
+  .q-item--active {
+    color: black;
+    font-weight: bold;
+    background: #dbe7ff;
+  }
+}
+
+.q-option-group {
+  &[aria-disabled] {
+    .q-radio__inner {
+      opacity: 0.4;
+    }
+  }
+}
+
+.q-input {
+  font-family: 'NanumSquareNeo', sans-serif !important;
+}
