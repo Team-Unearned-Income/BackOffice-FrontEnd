@@ -5,16 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build:prod": "vite build --mode prod",
-    "build:dev": "vite build --mode dev",
-    "deploy:dev": "npm run api-generate:dev && npm run build:dev && rsync -avhz --delete dist/ sland@121.78.125.224:/var/www/adm/",
-    "deploy:prod": "npm run api-generate:prod && npm run build:prod && rsync -avhz --delete dist/ sland@121.78.183.224:/data/arom/www/adm/",
+    "build": "vite build --mode dev",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
-    "format": "prettier --write src/",
-    "api-generate": "node ./scripts/generator/index.mjs ./.env",
-    "api-generate:dev": "node ./scripts/generator/index.mjs ./.env.dev",
-    "api-generate:prod": "node ./scripts/generator/index.mjs ./.env.prod"
+    "format": "prettier --write src/"
   },
   "dependencies": {
     "@biomejs/wasm-nodejs": "^1.9.4",
