@@ -10,7 +10,7 @@
 ## 프론트엔드 개발 규칙
 
 - **테이블은 공통 컴포넌트 `PageTable`(`src/components/table/PageTable.vue`)을 사용한다.** `q-table`을 사용하는 List 페이지(목록 화면)를 생성·수정할 때는 직접 `q-table`을 쓰지 말고 반드시 `PageTable`을 사용한다. 검색은 `TableSearch`(`src/components/table/TableSearch.vue`)를 사용한다.
-  - 레퍼런스 패턴: `src/pages/operate/attraction/AttractionList.vue`
+  - 레퍼런스 패턴: `src/sample/pages/operate/attraction/AttractionList.vue` (seoulland 레거시, 참조용 보관)
   - 컬럼은 `tableModel.header`에 정의하고, 뱃지/커스텀 셀은 `format`이 HTML 문자열을 반환하는 방식(`v-runtime-template` 렌더), 행 내 인터랙티브 버튼은 컬럼의 `slot` 옵션을 사용한다.
   - 데이터 로딩은 `tableRef.requestServerInteraction()` → `@request` 핸들러에서 `tableModel.rows`를 채운다.
   - `PageTable`에는 `class="q-pa-md"`를 주어 내부(필터 컨테이너 + 테이블) 패딩을 확보한다.

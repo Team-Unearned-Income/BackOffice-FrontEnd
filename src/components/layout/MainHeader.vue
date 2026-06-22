@@ -28,6 +28,7 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { useUserStore } from '@/stores/user.js'
+import { useAuthStore } from '@/stores/auth'
 import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
 import { storeToRefs } from 'pinia'
 import { useLayoutStore } from '@/stores/layout'
@@ -37,6 +38,7 @@ const router = useRouter()
 const layoutStore = useLayoutStore()
 const { isShowLnb } = storeToRefs(useLayoutStore())
 const userStore = useUserStore()
+const authStore = useAuthStore()
 
 const envProfile = import.meta.env.MODE // 현재 환경 '로컬 : development' | '개발 : dev'
 
@@ -51,8 +53,9 @@ const onClickLogout = () => {
       cancel: true
     }
   }).onOk(() => {
-    /** TODO: auth에 logout 구성 or B/E에서 구성한 logout 호출 */
-    localStorage.removeItem('auth')
+    // 토큰/유저 상태 초기화 후 소셜 로그인 화면으로 이동
+    authStore.logout()
+    userStore.$reset()
     layoutStore.resetStore()
 
     router.push({ name: 'Login' })
