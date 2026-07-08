@@ -13,3 +13,9 @@ git config commit.template .gitmessage
 ## F/E 실행
 
 npm run dev
+
+
+## 개발 중 어드민 role 적용방법
+```
+경로 맞추고 .\scripts\grant-admin.ps1 <-- PowerShell 에서 실행
+```
