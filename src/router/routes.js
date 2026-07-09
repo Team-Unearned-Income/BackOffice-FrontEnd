@@ -9,6 +9,7 @@ import reportRoutes from '/src/pages/report/routes.js'
 import verificationRoutes from '/src/pages/verification/routes.js'
 import supportRoutes from '/src/pages/support/routes.js'
 import lifePatternRoutes from '/src/pages/lifePattern/routes.js'
+import roomTypeRoutes from '/src/pages/roomType/routes.js'
 import termsRoutes from '/src/pages/terms/routes.js'
 
 // 기존 seoulland 라우트는 src/sample/ 로 분리 보관 (LNB 미노출, 라우터 미연결)
@@ -35,6 +36,7 @@ const routes = [
       ...verificationRoutes,
       ...supportRoutes,
       ...lifePatternRoutes,
+      ...roomTypeRoutes,
       ...termsRoutes,
     ]
   },
