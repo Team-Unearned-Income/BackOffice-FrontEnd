@@ -28,9 +28,9 @@
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-5">
             <PageTable
-              class="q-pa-md"
               ref="pendingTableRef"
               v-model="pendingTableModel"
+              class="q-pa-md"
               :row-key="'id'"
               :table-style="{ minHeight: '40vh' }"
               :on-top-options="false"
@@ -50,9 +50,9 @@
       <!-- 처리 완료: 읽기 전용 전체 테이블 -->
       <q-tab-panel name="completed" class="q-px-none q-pt-md">
         <PageTable
-          class="q-pa-md"
           ref="completedTableRef"
           v-model="completedTableModel"
+          class="q-pa-md"
           :row-key="'id'"
           :table-style="{ minHeight: '40vh' }"
         />
@@ -63,30 +63,25 @@
 
 <script setup>
 import { computed, inject, onMounted, ref } from 'vue'
+import { useQuasar } from 'quasar'
+import dayjs from 'dayjs'
 import COMMON from '@/constants/commonConstatns'
 import PageTable from '@/components/table/PageTable.vue'
+import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
 import ReportDetailPanel from './ReportDetailPanel.vue'
-import { TYPE_META, STATUS_PENDING_META, RESULT_META, badgeHtml } from './reportMeta'
+import { reportApi } from '@/service/bo/report'
+import { TYPE_META, STATUS_PENDING_META, RESULT_META, RESULT_UNKNOWN_META, badgeHtml } from './reportMeta'
 
 const emitter = inject('emitter')
+const $q = useQuasar()
 
-/** 처리일 표기용 목업 기준일 */
-const MOCK_TODAY = '2025.06.08'
+const showError = (e) => {
+  const message = e?.error?.message || e?.message || '처리 중 오류가 발생했습니다.'
+  $q.dialog({ component: AlarmDialog, componentProps: { title: '오류', message } })
+}
 
-/** 목업 데이터 (API 연동 시 교체) */
-const pendingReports = ref([
-  { id: 102, type: 'post', reporter: '김종민', reporterId: 1021, target: '게시글 #201', receivedDate: '2025.06.07', reason: '허위 정보로 올라온 게시글입니다. 실제 방 사진이 아닌 것 같고 보증금 금액도 시세와 차이가 납니다.' },
-  { id: 101, type: 'post', reporter: '이수현', reporterId: 1022, target: '게시글 #198', receivedDate: '2025.06.06', reason: '연락이 안 되고 실제 매물이 아닌 것 같습니다.' },
-  { id: 99, type: 'profile', reporter: '박민준', reporterId: 1009, target: '회원 #1033', receivedDate: '2025.06.05', reason: '부적절한 프로필 사진과 욕설이 포함된 소개글입니다.' },
-  { id: 95, type: 'post', reporter: '최예린', reporterId: 1008, target: '게시글 #185', receivedDate: '2025.06.04', reason: '중복으로 여러 번 올라온 동일 매물입니다.' }
-])
-
-const completedReports = ref([
-  { id: 91, type: 'post', reporter: '이수현', result: '비공개 처리', processedDate: '2025.06.06', processor: 'admin' },
-  { id: 88, type: 'profile', reporter: '박민준', result: '무혐의', processedDate: '2025.06.04', processor: 'admin' },
-  { id: 85, type: 'post', reporter: '최예린', result: '비공개 처리', processedDate: '2025.06.03', processor: 'admin' },
-  { id: 81, type: 'profile', reporter: '김종민', result: '회원 정지', processedDate: '2025.05.31', processor: 'admin' }
-])
+const pendingReports = ref([])
+const completedReports = ref([])
 
 const tab = ref('pending')
 const pendingCount = computed(() => pendingReports.value.length)
@@ -102,7 +97,14 @@ const pendingTableModel = ref({
   header: [
     { name: 'type', label: '신고 유형', field: 'type', align: 'left', tooltip: false, format: (v) => badgeHtml(TYPE_META[v]) },
     { name: 'reporter', label: '신고자', field: 'reporter', align: 'left', tooltip: false },
-    { name: 'receivedDate', label: '접수일', field: 'receivedDate', align: 'center', tooltip: false },
+    {
+      name: 'createdAt',
+      label: '접수일',
+      field: 'createdAt',
+      align: 'center',
+      tooltip: false,
+      format: (v) => (v ? dayjs(v).format('YYYY.MM.DD') : '-')
+    },
     { name: 'status', label: '상태', field: 'status', align: 'center', tooltip: false, format: () => badgeHtml(STATUS_PENDING_META) }
   ],
   rows: [],
@@ -120,15 +122,27 @@ const completedTableModel = ref({
     { name: 'id', label: '신고 ID', field: 'id', align: 'left', tooltip: false, format: (v) => `<span>#${String(v).padStart(3, '0')}</span>` },
     { name: 'type', label: '유형', field: 'type', align: 'center', tooltip: false, format: (v) => badgeHtml(TYPE_META[v]) },
     { name: 'reporter', label: '신고자', field: 'reporter', align: 'left', tooltip: false },
-    { name: 'result', label: '처리 결과', field: 'result', align: 'center', tooltip: false, format: (v) => badgeHtml(RESULT_META[v]) },
-    { name: 'processedDate', label: '처리일', field: 'processedDate', align: 'center', tooltip: false },
-    { name: 'processor', label: '처리자', field: 'processor', align: 'center', tooltip: false }
+    {
+      name: 'declarationType',
+      label: '처리 결과',
+      field: 'declarationType',
+      align: 'center',
+      tooltip: false,
+      format: (v) => badgeHtml(RESULT_META[v] ?? RESULT_UNKNOWN_META)
+    },
+    {
+      name: 'createdAt',
+      label: '처리일',
+      field: 'createdAt',
+      align: 'center',
+      tooltip: false,
+      format: (v) => (v ? dayjs(v).format('YYYY.MM.DD') : '-')
+    }
   ],
   rows: [],
   pagination: { page: 1, rowsPerPage: 15, rowsNumber: 0 }
 })
 
-/** 목업 행 동기화 (mock이라 server interaction 없이 직접 바인딩) */
 const syncTables = () => {
   pendingTableModel.value.rows = pendingReports.value
   pendingTableModel.value.pagination.rowsNumber = pendingReports.value.length
@@ -136,28 +150,45 @@ const syncTables = () => {
   completedTableModel.value.pagination.rowsNumber = completedReports.value.length
 }
 
+const fetchAll = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    const [pending, completed] = await Promise.all([
+      reportApi.getWaitList({ page: 0, size: 100 }),
+      reportApi.getDoneList({ page: 0, size: 100 })
+    ])
+    pendingReports.value = pending?.reportInfoList ?? []
+    completedReports.value = completed?.reportInfoList ?? []
+    syncTables()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
+}
+
 const selectReport = (row) => {
   selectedReport.value = row
 }
 
-/** 처리: 대기 → 완료 이동, 처리자·일시 자동 기록 */
-const onProcess = ({ result }) => {
+/** 처리: action에 맞는 reportApi 메서드 호출 후 목록 갱신 */
+const onProcess = async ({ action, reason }) => {
   const r = selectedReport.value
-  completedReports.value.unshift({
-    id: r.id,
-    type: r.type,
-    reporter: r.reporter,
-    result,
-    processedDate: MOCK_TODAY,
-    processor: 'admin'
-  })
-  pendingReports.value = pendingReports.value.filter((p) => p.id !== r.id)
-  selectedReport.value = null
-  syncTables()
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    if (action === 'hidden') await reportApi.hidden({ id: r.id, type: r.type, reason })
+    else if (action === 'suspended') await reportApi.suspended({ id: r.id, type: r.type, reason })
+    else await reportApi.noAction({ id: r.id, type: r.type })
+    selectedReport.value = null
+    await fetchAll()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
 onMounted(() => {
-  emitter.emit(COMMON.LOADING.HIDE)
-  syncTables()
+  fetchAll()
 })
 </script>
