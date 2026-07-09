@@ -13,7 +13,7 @@
       <div>
         <div class="panel-section-title">대표 이미지</div>
         <div class="thumbnail-box flex flex-center text-grey-6">
-          <q-img v-if="post.thumbnail" :src="post.thumbnail" class="fit" />
+          <q-img v-if="thumbnailUrl" :src="thumbnailUrl" class="fit" />
           <template v-else>대표 이미지 썸네일</template>
         </div>
       </div>
@@ -37,24 +37,8 @@
     </q-card-section>
 
     <q-separator />
-    <!-- 3. 액션 (노출 상태에 따라 변경) -->
-    <q-card-actions align="left" class="q-px-lg q-py-md q-gutter-sm">
-      <q-btn
-        v-if="post.status === 'visible'"
-        label="비공개"
-        class="bg-red-1 text-bold"
-        color="red"
-        outline
-        @click="showHide = true"
-      />
-      <q-btn
-        v-if="post.status === 'hidden'"
-        label="재노출"
-        color="dark"
-        unelevated
-        text-color="white"
-        @click="showRepublish = true"
-      />
+    <!-- 3. 액션 — 백엔드가 soft delete만 지원 (비공개/재노출 API 없음) -->
+    <q-card-actions v-if="!post.isDeleted" align="left" class="q-px-lg q-py-md q-gutter-sm">
       <q-btn
         label="삭제"
         class="bg-red-1 text-bold"
@@ -65,24 +49,6 @@
     </q-card-actions>
 
     <!-- 처리 확인 모달 -->
-    <ProcessConfirmModal
-      v-model:show="showHide"
-      title="게시글을 비공개할까요?"
-      message="작성자에게 사유가 알림으로 전송됩니다."
-      require-reason
-      reason-label="비공개 사유 (필수)"
-      confirm-label="비공개"
-      confirm-color="red"
-      @confirm="onHideConfirm"
-    />
-    <ProcessConfirmModal
-      v-model:show="showRepublish"
-      title="게시글을 재노출할까요?"
-      message="비공개 처리된 게시글을 다시 노출합니다."
-      confirm-label="재노출"
-      confirm-color="dark"
-      @confirm="onRepublishConfirm"
-    />
     <ProcessConfirmModal
       v-model:show="showRemove"
       title="게시글을 삭제할까요?"
@@ -98,6 +64,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import dayjs from 'dayjs'
 import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
 import { POST_STATUS_META } from './postMeta'
 
@@ -108,28 +75,36 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'hide', 'republish', 'remove'])
+const emit = defineEmits(['close', 'remove'])
 
-const statusMeta = computed(() => POST_STATUS_META[props.post.status])
+const statusMeta = computed(() => POST_STATUS_META[String(props.post.isDeleted)])
+
+/** thumbnailImage는 저장 파일명만 내려옴 — 전체 URL 여부가 확실치 않은 값만 <img>로 렌더 */
+const thumbnailUrl = computed(() =>
+  props.post.thumbnailImage && /^https?:\/\//.test(props.post.thumbnailImage) ? props.post.thumbnailImage : ''
+)
 
 const info = computed(() => [
   { label: '제목', value: props.post.title },
-  { label: '작성자', value: `${props.post.author} (#${props.post.authorId})` },
+  { label: '작성자', value: `${props.post.writer ?? '-'} (#${props.post.writerId ?? '-'})` },
   { label: '지역', value: props.post.region },
-  { label: '보증금/월세', value: `${props.post.deposit} / ${props.post.rent}` },
-  { label: '입주가능일', value: props.post.moveInLabel === '즉시' ? '즉시 입주' : props.post.moveInLabel },
-  { label: '등록일', value: props.post.regDate },
-  { label: '조회수', value: `${props.post.views}회` }
+  { label: '보증금/월세', value: `${props.post.deposit ?? '-'} / ${props.post.monthlyRent ?? '-'}` },
+  {
+    label: '입주가능일',
+    value: props.post.comeableDateNegotiable
+      ? '협의 가능'
+      : props.post.comeableDate
+        ? dayjs(props.post.comeableDate).format('YYYY.MM.DD')
+        : '-'
+  },
+  { label: '등록일', value: props.post.createdAt ? dayjs(props.post.createdAt).format('YYYY.MM.DD') : '-' },
+  { label: '조회수', value: `${props.post.hits ?? 0}회` }
 ])
 
 /** 모달 표시 상태 */
-const showHide = ref(false)
-const showRepublish = ref(false)
 const showRemove = ref(false)
 
-/** 확인 핸들러 (추후 API 호출 연결 지점) */
-const onHideConfirm = (reason) => emit('hide', reason)
-const onRepublishConfirm = () => emit('republish')
+/** 확인 핸들러 */
 const onRemoveConfirm = (reason) => emit('remove', reason)
 </script>
 
