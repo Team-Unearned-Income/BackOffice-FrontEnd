@@ -31,10 +31,10 @@
         <div class="row q-col-gutter-md">
           <div class="col-12 col-md-6">
             <PageTable
-              class="q-pa-md"
               ref="pendingTableRef"
               v-model="pendingTableModel"
-              :row-key="'id'"
+              class="q-pa-md"
+              :row-key="'email'"
               :table-style="{ minHeight: '40vh' }"
               :on-top-options="false"
               :on-custom-pagination="false"
@@ -58,10 +58,10 @@
       <!-- 승인 완료: 읽기 전용 -->
       <q-tab-panel name="approved" class="q-px-none q-pt-md">
         <PageTable
-          class="q-pa-md"
           ref="approvedTableRef"
           v-model="approvedTableModel"
-          :row-key="'id'"
+          class="q-pa-md"
+          :row-key="'email'"
           :table-style="{ minHeight: '40vh' }"
         />
       </q-tab-panel>
@@ -69,10 +69,10 @@
       <!-- 반려: 읽기 전용 -->
       <q-tab-panel name="rejected" class="q-px-none q-pt-md">
         <PageTable
-          class="q-pa-md"
           ref="rejectedTableRef"
           v-model="rejectedTableModel"
-          :row-key="'id'"
+          class="q-pa-md"
+          :row-key="'email'"
           :table-style="{ minHeight: '40vh' }"
         />
       </q-tab-panel>
@@ -82,35 +82,29 @@
 
 <script setup>
 import { computed, inject, onMounted, ref } from 'vue'
+import { useQuasar } from 'quasar'
+import dayjs from 'dayjs'
 import COMMON from '@/constants/commonConstatns'
 import PageTable from '@/components/table/PageTable.vue'
+import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
 import VerificationDetailPanel from './VerificationDetailPanel.vue'
+import { verificationApi } from '@/service/bo/verification'
 import { TYPE_META, badgeHtml } from './verificationMeta'
 
 const emitter = inject('emitter')
+const $q = useQuasar()
 
-/** 처리일 표기용 목업 기준일 */
-const MOCK_TODAY = '2025.06.08'
+/** 처리 기한: 요청일로부터 3일 (공통 스펙 §6) */
+const DEADLINE_DAYS = 3
 
-/** 목업 데이터 (API 연동 시 교체) */
-const pendingRequests = ref([
-  { id: 1, member: '김종민', memberId: 1021, type: 'school', email: 'jm@korea.ac.kr', requestDate: '2025.06.07', elapsedText: '1일 경과 (D-2)', overdue: true },
-  { id: 2, member: '이수현', memberId: 1022, type: 'company', email: 'sh@kakao.com', requestDate: '2025.06.06', elapsedText: '2일 경과 (D-1)', overdue: false },
-  { id: 3, member: '최민재', memberId: 1031, type: 'school', email: 'mj@snu.ac.kr', requestDate: '2025.06.05', elapsedText: '3일 경과 (D-0)', overdue: true }
-])
+const showError = (e) => {
+  const message = e?.error?.message || e?.message || '처리 중 오류가 발생했습니다.'
+  $q.dialog({ component: AlarmDialog, componentProps: { title: '오류', message } })
+}
 
-const approvedRequests = ref([
-  { id: 11, member: '박지현', type: 'school', email: 'jh@yonsei.ac.kr', approvedDate: '2025.06.06', processor: 'admin' },
-  { id: 12, member: '이동훈', type: 'company', email: 'dh@kakao.com', approvedDate: '2025.06.05', processor: 'admin' },
-  { id: 13, member: '김서연', type: 'school', email: 'sy@kaist.ac.kr', approvedDate: '2025.06.04', processor: 'admin' },
-  { id: 14, member: '최민준', type: 'company', email: 'mj@toss.im', approvedDate: '2025.06.03', processor: 'admin' }
-])
-
-const rejectedRequests = ref([
-  { id: 21, member: '이상민', type: 'school', email: 'sm@gmail.com', reason: '개인 이메일 형식', rejectedDate: '2025.06.05' },
-  { id: 22, member: '한지민', type: 'company', email: 'jm@naver.com', reason: '개인 이메일 형식', rejectedDate: '2025.06.04' },
-  { id: 23, member: '오현준', type: 'school', email: 'hj@daum.net', reason: '학교 이메일 도메인 아님', rejectedDate: '2025.06.02' }
-])
+const pendingRequests = ref([])
+const approvedRequests = ref([])
+const rejectedRequests = ref([])
 
 const tab = ref('pending')
 const pendingCount = computed(() => pendingRequests.value.length)
@@ -124,10 +118,17 @@ const pendingTableModel = ref({
   selected: [],
   filterAndSearchData: {},
   header: [
-    { name: 'member', label: '회원명', field: 'member', align: 'left', tooltip: false },
+    { name: 'name', label: '회원명', field: 'name', align: 'left', tooltip: false },
     { name: 'type', label: '인증 유형', field: 'type', align: 'center', tooltip: false, format: (v) => badgeHtml(TYPE_META[v]) },
     { name: 'email', label: '제출 이메일', field: 'email', align: 'left', tooltip: false },
-    { name: 'requestDate', label: '요청일', field: 'requestDate', align: 'center', tooltip: false }
+    {
+      name: 'createAt',
+      label: '요청일',
+      field: 'createAt',
+      align: 'center',
+      tooltip: false,
+      format: (v) => (v ? dayjs(v).format('YYYY.MM.DD') : '-')
+    }
   ],
   rows: [],
   pagination: { page: 1, rowsPerPage: 15, rowsNumber: 0 }
@@ -141,11 +142,18 @@ const approvedTableModel = ref({
   selected: [],
   filterAndSearchData: {},
   header: [
-    { name: 'member', label: '회원명', field: 'member', align: 'left', tooltip: false },
+    { name: 'name', label: '회원명', field: 'name', align: 'left', tooltip: false },
     { name: 'type', label: '인증 유형', field: 'type', align: 'center', tooltip: false, format: (v) => badgeHtml(TYPE_META[v]) },
     { name: 'email', label: '인증 이메일', field: 'email', align: 'left', tooltip: false },
-    { name: 'approvedDate', label: '승인일', field: 'approvedDate', align: 'center', tooltip: false },
-    { name: 'processor', label: '처리자', field: 'processor', align: 'center', tooltip: false }
+    {
+      name: 'createAt',
+      label: '승인일',
+      field: 'createAt',
+      align: 'center',
+      tooltip: false,
+      format: (v) => (v ? dayjs(v).format('YYYY.MM.DD') : '-')
+    },
+    { name: 'accepter', label: '처리자', field: 'accepter', align: 'center', tooltip: false }
   ],
   rows: [],
   pagination: { page: 1, rowsPerPage: 15, rowsNumber: 0 }
@@ -159,17 +167,34 @@ const rejectedTableModel = ref({
   selected: [],
   filterAndSearchData: {},
   header: [
-    { name: 'member', label: '회원명', field: 'member', align: 'left', tooltip: false },
+    { name: 'name', label: '회원명', field: 'name', align: 'left', tooltip: false },
     { name: 'type', label: '인증 유형', field: 'type', align: 'center', tooltip: false, format: (v) => badgeHtml(TYPE_META[v]) },
     { name: 'email', label: '제출 이메일', field: 'email', align: 'left', tooltip: false },
-    { name: 'reason', label: '반려 사유', field: 'reason', align: 'left', tooltip: false },
-    { name: 'rejectedDate', label: '반려일', field: 'rejectedDate', align: 'center', tooltip: false }
+    { name: 'description', label: '반려 사유', field: 'description', align: 'left', tooltip: false },
+    {
+      name: 'createAt',
+      label: '반려일',
+      field: 'createAt',
+      align: 'center',
+      tooltip: false,
+      format: (v) => (v ? dayjs(v).format('YYYY.MM.DD') : '-')
+    }
   ],
   rows: [],
   pagination: { page: 1, rowsPerPage: 15, rowsNumber: 0 }
 })
 
-/** 목업 행 동기화 (mock이라 server interaction 없이 직접 바인딩) */
+/** 요청일 기준 경과일 / D-day 계산 (상세 API가 아닌 목록의 createAt으로 클라이언트 계산) */
+const withElapsed = (row) => {
+  const elapsedDays = row.createAt ? dayjs().startOf('day').diff(dayjs(row.createAt).startOf('day'), 'day') : 0
+  const remaining = DEADLINE_DAYS - elapsedDays
+  return {
+    ...row,
+    elapsedText: remaining > 0 ? `${elapsedDays}일 경과 (D-${remaining})` : `${elapsedDays}일 경과 (기한 초과)`,
+    overdue: remaining <= 0
+  }
+}
+
 const syncTables = () => {
   pendingTableModel.value.rows = pendingRequests.value
   pendingTableModel.value.pagination.rowsNumber = pendingRequests.value.length
@@ -179,44 +204,63 @@ const syncTables = () => {
   rejectedTableModel.value.pagination.rowsNumber = rejectedRequests.value.length
 }
 
+const fetchAll = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    const [pending, approved, rejected] = await Promise.all([
+      verificationApi.getWaitList({ page: 0, size: 100 }),
+      verificationApi.getApproveList({ page: 0, size: 100 }),
+      verificationApi.getCancelList({ page: 0, size: 100 })
+    ])
+    pendingRequests.value = (pending?.employeeAuth ?? []).map(withElapsed)
+    approvedRequests.value = approved?.employeeAuth ?? []
+    rejectedRequests.value = rejected?.employeeAuth ?? []
+    syncTables()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
+}
+
 const selectRequest = (row) => {
   selectedRequest.value = row
 }
 
-/** 승인: 대기 → 승인 완료 이동, 처리자·일시 자동 기록 */
-const onApprove = () => {
+/** 승인 처리 — 백엔드 응답에 id가 없어(검토 대기 목록 DTO 이슈) row.id가 undefined일 수 있음 */
+const onApprove = async () => {
   const r = selectedRequest.value
-  approvedRequests.value.unshift({
-    id: r.id,
-    member: r.member,
-    type: r.type,
-    email: r.email,
-    approvedDate: MOCK_TODAY,
-    processor: 'admin'
-  })
-  pendingRequests.value = pendingRequests.value.filter((p) => p.id !== r.id)
-  selectedRequest.value = null
-  syncTables()
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await verificationApi.approve(r.id)
+    selectedRequest.value = null
+    await fetchAll()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
-/** 반려: 대기 → 반려 이동, 사유 기록 */
-const onReject = (reason) => {
+/**
+ * 반려 처리 — 위와 동일하게 id 이슈 영향 받음
+ * 반려 사유는 모달에서 입력받지만 `PATCH .../wait/{id}/cancel`이 별도 body를 받지 않아 백엔드로 전달되지 않음
+ */
+const onReject = async () => {
   const r = selectedRequest.value
-  rejectedRequests.value.unshift({
-    id: r.id,
-    member: r.member,
-    type: r.type,
-    email: r.email,
-    reason,
-    rejectedDate: MOCK_TODAY
-  })
-  pendingRequests.value = pendingRequests.value.filter((p) => p.id !== r.id)
-  selectedRequest.value = null
-  syncTables()
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await verificationApi.reject(r.id)
+    selectedRequest.value = null
+    await fetchAll()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
 onMounted(() => {
-  emitter.emit(COMMON.LOADING.HIDE)
-  syncTables()
+  fetchAll()
 })
 </script>
