@@ -1,10 +1,5 @@
 <template>
   <div>
-    <!-- 새 약관 등록 -->
-    <div class="row justify-end q-mb-md">
-      <q-btn label="+ 새 약관 등록" color="dark" outline @click="openCreate" />
-    </div>
-
     <!-- 약관 버전 목록 -->
     <PageTable
       ref="tableRef"
@@ -15,18 +10,21 @@
       :on-top-options="false"
     >
       <template #filter-section>
-        <div class="row q-col-gutter-sm items-center q-pb-md">
-          <div class="col-12 col-md-5">
-            <TableSearch
-              v-model:model-value="searchKeyword"
-              placeholder="제목 검색"
-              @select-search-item="syncRows"
-              @clear-item="clearSearch"
-            />
+        <div class="row items-center justify-between q-pb-md">
+          <div class="row q-col-gutter-sm items-center">
+            <div class="col-auto" style="min-width: 260px">
+              <TableSearch
+                v-model:model-value="searchKeyword"
+                placeholder="제목 검색"
+                @select-search-item="syncRows"
+                @clear-item="clearSearch"
+              />
+            </div>
+            <div class="col-auto">
+              <q-btn label="검색" color="dark" unelevated @click="syncRows" />
+            </div>
           </div>
-          <div class="col-auto">
-            <q-btn label="검색" color="dark" unelevated @click="syncRows" />
-          </div>
+          <q-btn label="+ 새 약관 등록" color="dark" outline @click="openCreate" />
         </div>
       </template>
 

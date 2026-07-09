@@ -2,7 +2,27 @@
   <div class="q-pa-lg">
     <div class="row items-center justify-between q-mb-md">
       <div class="text-h5 text-bold">약관 관리</div>
-      <q-btn label="+ 약관 유형 추가" color="dark" outline @click="openAddType" />
+      <div class="row items-center q-gutter-sm">
+        <q-btn
+          v-if="currentType"
+          flat
+          dense
+          no-caps
+          color="dark"
+          label="유형명 수정"
+          @click="openEditType(currentType)"
+        />
+        <q-btn
+          v-if="currentType"
+          flat
+          dense
+          no-caps
+          color="red"
+          label="유형 삭제"
+          @click="openDeleteType(currentType)"
+        />
+        <q-btn label="+ 약관 유형 추가" color="dark" outline @click="openAddType" />
+      </div>
     </div>
 
     <!-- 유형 없음 -->
@@ -28,10 +48,6 @@
 
       <q-tab-panels v-model="tab" animated keep-alive class="bg-transparent">
         <q-tab-panel v-for="t in types" :key="t.id" :name="t.id" class="q-px-none q-pt-md">
-          <div class="row justify-end q-gutter-sm q-mb-sm">
-            <q-btn flat dense no-caps color="dark" label="유형명 수정" @click="openEditType(t)" />
-            <q-btn flat dense no-caps color="red" label="유형 삭제" @click="openDeleteType(t)" />
-          </div>
           <TermsVersionTab :agreement-type-id="t.id" :type-title="t.title" />
         </q-tab-panel>
       </q-tab-panels>
@@ -97,6 +113,7 @@ const $q = useQuasar()
 
 const types = ref([])
 const tab = ref(null)
+const currentType = computed(() => types.value.find((t) => t.id === tab.value) ?? null)
 
 const showError = (e) => {
   const message = e?.error?.message || e?.message || '처리 중 오류가 발생했습니다.'
@@ -105,7 +122,6 @@ const showError = (e) => {
 
 const loadTypes = async () => {
   const res = await termsApi.getTypeList()
-  debugger
   types.value = res?.termTypes ?? []
   // 선택 탭 유지, 없으면 첫 번째
   if (!types.value.some((t) => t.id === tab.value)) {
