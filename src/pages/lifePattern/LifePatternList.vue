@@ -2,44 +2,44 @@
   <div class="q-pa-lg">
     <div class="text-h5 text-bold q-mb-md">생활패턴 관리</div>
 
-    <!-- 추가 버튼 -->
-    <div class="row justify-end q-mb-md">
-      <q-btn label="+ 생활패턴 추가" color="dark" outline @click="openCreate" />
-    </div>
-
     <!-- 목록 -->
     <PageTable
-      class="q-pa-md"
       ref="tableRef"
       v-model="tableModel"
+      class="q-pa-md"
       :row-key="'id'"
       :table-style="{ minHeight: '40vh' }"
       :on-top-options="false"
     >
       <!-- 검색 / 필터 -->
       <template #filter-section>
-        <div class="row q-col-gutter-sm items-center q-pb-md">
-          <div class="col-12 col-md-4">
-            <TableSearch
-              v-model:model-value="searchKeyword"
-              placeholder="항목명 검색"
-              @select-search-item="syncRows"
-              @clear-item="clearSearch"
-            />
-          </div>
-          <div class="col-6 col-md-3">
-            <q-select
-              v-model="typeFilter"
-              :options="TYPE_FILTER_OPTIONS"
-              dense
-              outlined
-              emit-value
-              map-options
-              @update:model-value="syncRows"
-            />
+        <div class="row justify-between items-center q-pb-md">
+          <div class="row q-col-gutter-sm items-center">
+            <div class="col-auto" style="min-width: 260px">
+              <TableSearch
+                v-model:model-value="searchKeyword"
+                placeholder="항목명 검색"
+                @select-search-item="syncRows"
+                @clear-item="clearSearch"
+              />
+            </div>
+            <div class="col-auto" style="min-width: 160px">
+              <q-select
+                v-model="typeFilter"
+                :options="TYPE_FILTER_OPTIONS"
+                dense
+                outlined
+                emit-value
+                map-options
+                @update:model-value="syncRows"
+              />
+            </div>
+            <div class="col-auto">
+              <q-btn label="검색" color="dark" unelevated @click="syncRows" />
+            </div>
           </div>
           <div class="col-auto">
-            <q-btn label="검색" color="dark" unelevated @click="syncRows" />
+            <q-btn label="+ 생활패턴 추가" color="dark" outline @click="openCreate" />
           </div>
         </div>
       </template>
@@ -67,31 +67,32 @@
 
 <script setup>
 import { computed, inject, onMounted, ref } from 'vue'
+import { useQuasar } from 'quasar'
 import COMMON from '@/constants/commonConstatns'
 import PageTable from '@/components/table/PageTable.vue'
 import TableSearch from '@/components/table/TableSearch.vue'
 import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
+import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
 import LifePatternFormModal from './LifePatternFormModal.vue'
-import { TYPE_META, VISIBLE_META, HIDDEN_META, TYPE_FILTER_OPTIONS, badgeHtml } from './lifePatternMeta'
+import { lifePatternApi } from '@/service/bo/lifePattern'
+import { TYPE_META, TYPE_FILTER_OPTIONS, badgeHtml } from './lifePatternMeta'
 
 const emitter = inject('emitter')
+const $q = useQuasar()
 
-/** 목업 생활패턴 항목 */
-const patterns = ref([
-  { id: 1, order: 1, name: '취침 시간', type: 'slider', visible: true, minLabel: '일찍 자요', maxLabel: '늦게 자요', steps: 5, options: [] },
-  { id: 2, order: 2, name: '청결 민감도', type: 'slider', visible: true, minLabel: '둔감해요', maxLabel: '매우 예민해요', steps: 5, options: [] },
-  { id: 3, order: 3, name: '소음 민감도', type: 'slider', visible: true, minLabel: '괜찮아요', maxLabel: '매우 예민해요', steps: 5, options: [] },
-  { id: 4, order: 4, name: '실내 흡연', type: 'chip', visible: true, minLabel: '', maxLabel: '', steps: 5, options: ['비흡연', '흡연'] },
-  { id: 5, order: 5, name: '반려동물', type: 'chip', visible: false, minLabel: '', maxLabel: '', steps: 5, options: ['없어요', '있어요'] }
-])
+const showError = (e) => {
+  const message = e?.error?.message || e?.message || '처리 중 오류가 발생했습니다.'
+  $q.dialog({ component: AlarmDialog, componentProps: { title: '오류', message } })
+}
 
+const allPatterns = ref([])
 const typeFilter = ref('all')
 const searchKeyword = ref('')
 
 const detailText = (row) =>
-  row.type === 'slider'
-    ? `${row.minLabel} ↔ ${row.maxLabel} (${row.steps}단계)`
-    : row.options.join(' / ')
+  (row.details || [])
+    .map((d) => (d.description ? `${d.values}(${d.description})` : d.values))
+    .join(' / ')
 
 const tableRef = ref(null)
 const tableModel = ref({
@@ -100,26 +101,42 @@ const tableModel = ref({
   selected: [],
   filterAndSearchData: {},
   header: [
-    { name: 'order', label: '순서', field: 'order', align: 'center', tooltip: false },
+    { name: 'sort', label: '순서', field: 'sort', align: 'center', tooltip: false },
     { name: 'name', label: '항목명', field: 'name', align: 'left', tooltip: false },
     { name: 'type', label: '유형', field: 'type', align: 'center', tooltip: false, format: (v) => badgeHtml(TYPE_META[v]) },
-    { name: 'visible', label: '노출', field: 'visible', align: 'center', tooltip: false, format: (v) => badgeHtml(v ? VISIBLE_META : HIDDEN_META) },
-    { name: 'detail', label: '선택지 / 단계', field: 'detail', align: 'left', tooltip: false, format: (v, row) => `<span>${detailText(row)}</span>` },
+    { name: 'detail', label: '선택지', field: 'detail', align: 'left', tooltip: false, format: (v, row) => `<span>${detailText(row)}</span>` },
     { name: 'action', label: '액션', field: 'id', align: 'center', tooltip: false, slot: 'action' }
   ],
   rows: [],
   pagination: { page: 1, rowsPerPage: 15, rowsNumber: 0 }
 })
 
+const loadPatterns = async () => {
+  const res = await lifePatternApi.getList({ page: 0, size: 100 })
+  allPatterns.value = res?.patterns ?? []
+  syncRows()
+}
+
+const fetchPatterns = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await loadPatterns()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
+}
+
 const syncRows = () => {
   const kw = searchKeyword.value.trim().toLowerCase()
-  const filtered = patterns.value.filter((p) => {
+  const filtered = allPatterns.value.filter((p) => {
     const typeOk = typeFilter.value === 'all' || p.type === typeFilter.value
-    const keywordOk = !kw || p.name.toLowerCase().includes(kw)
+    const keywordOk = !kw || (p.name || '').toLowerCase().includes(kw)
     return typeOk && keywordOk
   })
-  // 우선순위(order) 오름차순 정렬
-  tableModel.value.rows = [...filtered].sort((a, b) => a.order - b.order)
+  // 우선순위(sort) 오름차순 정렬
+  tableModel.value.rows = [...filtered].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
   tableModel.value.pagination.rowsNumber = filtered.length
 }
 
@@ -140,15 +157,18 @@ const openEdit = (row) => {
   editingPattern.value = row
   showForm.value = true
 }
-const onFormSave = (data) => {
-  if (editingPattern.value) {
-    const target = patterns.value.find((p) => p.id === editingPattern.value.id)
-    if (target) Object.assign(target, data)
-  } else {
-    const newId = Math.max(0, ...patterns.value.map((p) => p.id)) + 1
-    patterns.value.push({ id: newId, ...data })
+const onFormSave = async (data) => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    if (editingPattern.value) await lifePatternApi.modify(editingPattern.value.id, data)
+    else await lifePatternApi.save(data)
+    showForm.value = false
+    await loadPatterns()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
   }
-  syncRows()
 }
 
 /** 삭제 확인 모달 */
@@ -164,13 +184,19 @@ const openDelete = (row) => {
   deleteTarget.value = row
   showDelete.value = true
 }
-const onDeleteConfirm = () => {
-  patterns.value = patterns.value.filter((p) => p.id !== deleteTarget.value.id)
-  syncRows()
+const onDeleteConfirm = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await lifePatternApi.remove(deleteTarget.value.id)
+    await loadPatterns()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
 onMounted(() => {
-  emitter.emit(COMMON.LOADING.HIDE)
-  syncRows()
+  fetchPatterns()
 })
 </script>
