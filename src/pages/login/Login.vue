@@ -36,6 +36,30 @@
         />
       </div>
 
+      <!-- 개발용 토큰 주입 로그인 (production 미노출) -->
+      <div v-if="envProfile !== 'production'" class="dev-login q-mt-lg">
+        <q-separator class="q-mb-md" />
+        <div class="text-caption text-grey-7 q-mb-xs">개발용 · accessToken 직접 주입</div>
+        <q-input
+          v-model="devToken"
+          type="textarea"
+          dense
+          outlined
+          autogrow
+          placeholder="유효한 admin accessToken(JWT) 붙여넣기"
+          input-style="max-height: 120px"
+        />
+        <q-btn
+          class="full-width q-mt-sm"
+          color="dark"
+          unelevated
+          no-caps
+          label="토큰으로 로그인 (dev)"
+          :disable="!devToken.trim()"
+          @click="loginWithDevToken"
+        />
+      </div>
+
       <div class="text-caption text-grey-6 text-center q-mt-lg">
         ※ admin 권한이 부여된 계정만 접속할 수 있으며, 주요 활동은 로그로 기록됩니다.
       </div>
@@ -44,21 +68,23 @@
 </template>
 
 <script setup>
-import { computed, inject, onMounted } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import COMMON from '@/constants/commonConstatns.js'
-import { USE_MOCK, buildAuthorizeUrl } from './socialLogin.js'
+import { useAuthStore } from '@/stores/auth'
 
 const emitter = inject('emitter')
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
 const envProfile = import.meta.env.MODE // '로컬: development' | '개발: dev'
 
 const ERROR_MESSAGES = {
   forbidden: '관리자(admin) 권한이 없는 계정입니다. 접근이 거부되었습니다.',
   failed: '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.',
-  denied: '로그인이 취소되었습니다.'
+  denied: '로그인이 취소되었습니다.',
+  unsupported: '현재는 카카오 로그인만 지원합니다.'
 }
 const errorMessage = computed(() => ERROR_MESSAGES[route.query.error] ?? '')
 
@@ -66,13 +92,34 @@ onMounted(() => {
   emitter.emit(COMMON.LOADING.HIDE)
 })
 
+/**
+ * 백엔드(스프링 시큐리티) OAuth 로그인.
+ * 백엔드가 카카오 인증 전체를 서버측(시크릿 포함)에서 처리 → accessToken 쿠키 + 세션 발급 →
+ * `${client-url}/auth/success`(기본값 = 이 앱이 뜬 localhost:5173)로 복귀.
+ */
+const backendOauthUrl = (provider) => {
+  const base =
+    import.meta.env.VITE_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:8080`
+  return `${base}/oauth2/authorization/${provider}`
+}
 const loginWith = (provider) => {
-  if (USE_MOCK) {
-    // TODO(백엔드 연동): mock 분기 제거. 실제로는 아래 window.location 리다이렉트만 사용.
-    router.push({ name: 'SocialLoginCallback', params: { provider }, query: { code: 'mock-code' } })
-    return
+  if (provider !== 'kakao') {
+    return router.replace({ name: 'Login', query: { error: 'unsupported' } })
   }
-  window.location.href = buildAuthorizeUrl(provider)
+  window.location.href = backendOauthUrl('kakao') // 백엔드로 전체 리다이렉트
+}
+
+/**
+ * 개발용: 유효한 admin accessToken(JWT)을 직접 auth store에 주입해 로그인.
+ * (프론트 단독 카카오 로그인이 막혀 있어, 백엔드/실서비스에서 받은 토큰으로 BO 테스트)
+ * production 빌드에서는 노출되지 않는다.
+ */
+const devToken = ref('')
+const loginWithDevToken = () => {
+  const token = devToken.value.trim()
+  if (!token) return
+  authStore.setToken(token)
+  router.replace({ name: 'Dashboard' })
 }
 </script>
 

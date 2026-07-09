@@ -19,6 +19,9 @@ const lnbMenu = [
   { key: 'verification', menuName: '신원 인증', icon: 'verified_user', url: '/verification' },
   { key: 'support', menuName: '고객센터', icon: 'support_agent', url: '/support' },
   { key: 'lifePattern', menuName: '생활패턴', icon: 'tune', url: '/life-pattern' },
+  { key: 'mailDomain', menuName: '메일 도메인', icon: 'alternate_email', url: '/mail-domain' },
+  { key: 'appVersion', menuName: '앱 버전', icon: 'system_update', url: '/app-version' },
+  { key: 'roomType', menuName: '방 유형', icon: 'meeting_room', url: '/room-type' },
   { key: 'terms', menuName: '약관관리', icon: 'gavel', url: '/terms' }
 ]
 

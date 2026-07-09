@@ -14,19 +14,19 @@
         <div class="panel-section-title">문의 정보</div>
         <div class="row q-py-xs">
           <div class="col-4 text-grey-7">회원명</div>
-          <div class="col text-right text-weight-medium">{{ inquiry.member }} (#{{ inquiry.memberId }})</div>
+          <div class="col text-right text-weight-medium">{{ inquiry.writer }}</div>
         </div>
         <div class="row items-center q-py-xs">
           <div class="col-4 text-grey-7">유형</div>
           <div class="col text-right">
-            <q-chip dense size="sm" :style="{ backgroundColor: typeMeta.bg, color: typeMeta.text }">
-              {{ typeMeta.label }}
+            <q-chip dense size="sm" :style="{ backgroundColor: typeStyle.bg, color: typeStyle.text }">
+              {{ inquiry.type }}
             </q-chip>
           </div>
         </div>
         <div class="row q-py-xs">
           <div class="col-4 text-grey-7">접수일</div>
-          <div class="col text-right">{{ inquiry.receivedDate }}</div>
+          <div class="col text-right">{{ receivedDate }}</div>
         </div>
         <div class="row items-center q-py-xs">
           <div class="col-4 text-grey-7">상태</div>
@@ -41,13 +41,20 @@
       <!-- 2. 문의 내용 -->
       <div>
         <div class="panel-section-title">문의 내용</div>
-        <div class="content-box">{{ inquiry.content }}</div>
+        <div class="content-box">{{ inquiry.contents }}</div>
       </div>
 
       <!-- 3. 답변 작성 / 조회 -->
       <div>
         <div class="panel-section-title">{{ isAnswered ? '답변 내용' : '답변 작성' }}</div>
-        <div v-if="isAnswered" class="content-box">{{ inquiry.answer }}</div>
+        <template v-if="isAnswered">
+          <div v-for="r in inquiry.reply" :key="r.id" class="content-box q-mb-sm">
+            <div class="text-caption text-grey-7 q-mb-xs">
+              {{ r.writer }} · {{ r.createAt ? dayjs(r.createAt).format('YYYY.MM.DD HH:mm') : '-' }}
+            </div>
+            {{ r.contents }}
+          </div>
+        </template>
         <q-input
           v-else
           v-model="answer"
@@ -78,7 +85,8 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { INQUIRY_TYPE_META, INQUIRY_STATUS_META } from './supportMeta'
+import dayjs from 'dayjs'
+import { INQUIRY_STATUS_META, INQUIRY_TYPE_BADGE_STYLE } from './supportMeta'
 
 const props = defineProps({
   inquiry: {
@@ -91,9 +99,12 @@ const emit = defineEmits(['close', 'answer'])
 
 const answer = ref('')
 
-const typeMeta = computed(() => INQUIRY_TYPE_META[props.inquiry.type])
+const typeStyle = computed(() => INQUIRY_TYPE_BADGE_STYLE)
 const statusMeta = computed(() => INQUIRY_STATUS_META[props.inquiry.status])
-const isAnswered = computed(() => props.inquiry.status === 'answered')
+const isAnswered = computed(() => props.inquiry.status === '답변 완료')
+const receivedDate = computed(() =>
+  props.inquiry.createAt ? dayjs(props.inquiry.createAt).format('YYYY.MM.DD') : '-'
+)
 
 const onSend = () => {
   if (!answer.value.trim()) return

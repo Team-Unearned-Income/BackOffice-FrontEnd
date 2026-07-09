@@ -12,13 +12,24 @@ export default defineConfig((config) => {
   return {
     server: {
       host: true,
-      port: 8082,
+      // 백엔드 app.client-url 기본값(http://localhost:5173)과 맞춰 OAuth 성공 리다이렉트(/auth/success)를 이 앱이 받도록
+      port: 5173,
       strictPort: true,
       proxy: {
         '^/api/seoulland/.*': {
           target: process.env.VITE_API_SERVER,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/seoulland/, '')
+        },
+        // Knock-in BO API: /bo/* 를 백엔드(VITE_API_SERVER)로 그대로 전달 (rewrite 없음)
+        '^/bo/.*': {
+          target: process.env.VITE_API_SERVER,
+          changeOrigin: true
+        },
+        // 로그아웃 API (그 외 /auth/* 는 프론트 라우트 — 특히 /auth/success 는 프록시하면 안 됨)
+        '^/auth/logout': {
+          target: process.env.VITE_API_SERVER,
+          changeOrigin: true
         }
       }
     },

@@ -4,7 +4,7 @@
     <div class="panel-section-title">인증 요청 상세</div>
     <div class="row q-py-xs">
       <div class="col-4 text-grey-7">회원명</div>
-      <div class="col text-right text-weight-medium">{{ request.member }} (#{{ request.memberId }})</div>
+      <div class="col text-right text-weight-medium">{{ request.name }}</div>
     </div>
     <div class="row items-center q-py-xs">
       <div class="col-4 text-grey-7">인증 유형</div>
@@ -20,7 +20,7 @@
     </div>
     <div class="row q-py-xs">
       <div class="col-4 text-grey-7">요청일</div>
-      <div class="col text-right">{{ request.requestDate }}</div>
+      <div class="col text-right">{{ requestDate }}</div>
     </div>
     <div class="row q-py-xs">
       <div class="col-4 text-grey-7">경과일</div>
@@ -51,7 +51,7 @@
     <ProcessConfirmModal
       v-model:show="showReject"
       title="반려 사유를 입력해주세요"
-      :message="`${request.member} (#${request.memberId}) ${typeMeta.label} 이메일 인증 요청을 반려합니다.\n사유는 유저에게 알림으로 전송됩니다.`"
+      :message="`${request.name} ${typeMeta.label} 이메일 인증 요청을 반려합니다.\n사유는 유저에게 알림으로 전송됩니다.`"
       require-reason
       reason-label="반려 사유 (필수)"
       placeholder="반려 사유를 입력해주세요 (예: 개인 이메일 형식입니다)"
@@ -64,6 +64,7 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import dayjs from 'dayjs'
 import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
 import { TYPE_META } from './verificationMeta'
 
@@ -77,6 +78,9 @@ const props = defineProps({
 const emit = defineEmits(['approve', 'reject'])
 
 const typeMeta = computed(() => TYPE_META[props.request.type])
+const requestDate = computed(() =>
+  props.request.createAt ? dayjs(props.request.createAt).format('YYYY.MM.DD') : '-'
+)
 
 /** 모달 표시 상태 */
 const showApprove = ref(false)

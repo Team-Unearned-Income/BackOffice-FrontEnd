@@ -16,11 +16,11 @@
     </div>
     <div class="row q-py-xs">
       <div class="col-4 text-grey-7">피신고 대상</div>
-      <div class="col text-right text-weight-medium">{{ report.target }}</div>
+      <div class="col text-right text-weight-medium">{{ targetLabel }}</div>
     </div>
     <div class="row q-py-xs">
       <div class="col-4 text-grey-7">접수일</div>
-      <div class="col text-right">{{ report.receivedDate }}</div>
+      <div class="col text-right">{{ receivedDate }}</div>
     </div>
 
     <!-- 4. 신고 사유 -->
@@ -30,7 +30,7 @@
     <!-- 5. 처리 액션 (유형별) -->
     <div class="panel-section-title q-mt-md">처리 액션</div>
     <div class="q-gutter-sm">
-      <template v-if="report.type === 'post'">
+      <template v-if="report.type === 'BOARD'">
         <q-btn label="게시글 비공개 + 통보" color="dark" unelevated text-color="white" @click="showHidePost = true" />
         <q-btn label="무혐의" color="grey-7" outline @click="showDismiss = true" />
         <q-btn label="작성자 정지" class="bg-red-1 text-bold" color="red" outline @click="showSuspendAuthor = true" />
@@ -50,7 +50,7 @@
       reason-label="비공개 사유 (필수)"
       confirm-label="비공개 처리"
       confirm-color="red"
-      @confirm="(reason) => emitProcess('비공개 처리', reason)"
+      @confirm="(reason) => emitProcess('hidden', reason)"
     />
     <ProcessConfirmModal
       v-model:show="showDismiss"
@@ -58,7 +58,7 @@
       message="신고를 무혐의 처리합니다."
       confirm-label="무혐의"
       confirm-color="dark"
-      @confirm="() => emitProcess('무혐의')"
+      @confirm="() => emitProcess('noAction')"
     />
     <ProcessConfirmModal
       v-model:show="showSuspendAuthor"
@@ -68,7 +68,7 @@
       reason-label="정지 사유 (필수)"
       confirm-label="작성자 정지"
       confirm-color="red"
-      @confirm="(reason) => emitProcess('회원 정지', reason)"
+      @confirm="(reason) => emitProcess('suspended', reason)"
     />
     <ProcessConfirmModal
       v-model:show="showSuspendMember"
@@ -78,13 +78,14 @@
       reason-label="정지 사유 (필수)"
       confirm-label="회원 정지"
       confirm-color="red"
-      @confirm="(reason) => emitProcess('회원 정지', reason)"
+      @confirm="(reason) => emitProcess('suspended', reason)"
     />
   </q-card>
 </template>
 
 <script setup>
 import { computed, ref } from 'vue'
+import dayjs from 'dayjs'
 import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
 import { TYPE_META } from './reportMeta'
 
@@ -98,6 +99,12 @@ const props = defineProps({
 const emit = defineEmits(['process'])
 
 const typeMeta = computed(() => TYPE_META[props.report.type])
+const targetLabel = computed(() =>
+  props.report.type === 'BOARD' ? `게시글 #${props.report.reportedId}` : `회원 #${props.report.reportedId}`
+)
+const receivedDate = computed(() =>
+  props.report.createdAt ? dayjs(props.report.createdAt).format('YYYY.MM.DD') : '-'
+)
 
 /** 모달 표시 상태 */
 const showHidePost = ref(false)
@@ -105,8 +112,8 @@ const showDismiss = ref(false)
 const showSuspendAuthor = ref(false)
 const showSuspendMember = ref(false)
 
-/** 확인 핸들러 (추후 API 호출 연결 지점) */
-const emitProcess = (result, reason) => emit('process', { result, reason })
+/** action: 'hidden' | 'noAction' | 'suspended' — reportApi 메서드명과 동일하게 맞춤 */
+const emitProcess = (action, reason) => emit('process', { action, reason })
 </script>
 
 <style scoped lang="scss">

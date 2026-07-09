@@ -1,123 +1,136 @@
 <template>
   <div>
-    <!-- 새 버전 등록 버튼 -->
-    <div class="row justify-end q-mb-md">
-      <q-btn label="+ 새 버전 등록" color="dark" outline @click="openCreate" />
-    </div>
-
-    <!-- 버전 목록 -->
+    <!-- 약관 버전 목록 -->
     <PageTable
-      class="q-pa-md"
       ref="tableRef"
       v-model="tableModel"
+      class="q-pa-md"
       :row-key="'id'"
       :table-style="{ minHeight: '30vh' }"
       :on-top-options="false"
     >
-      <!-- 검색 -->
       <template #filter-section>
-        <div class="row q-col-gutter-sm items-center q-pb-md">
-          <div class="col-12 col-md-5">
-            <TableSearch
-              v-model:model-value="searchKeyword"
-              placeholder="버전, 요약 검색"
-              @select-search-item="syncRows"
-              @clear-item="clearSearch"
-            />
+        <div class="row items-center justify-between q-pb-md">
+          <div class="row q-col-gutter-sm items-center">
+            <div class="col-auto" style="min-width: 260px">
+              <TableSearch
+                v-model:model-value="searchKeyword"
+                placeholder="제목 검색"
+                @select-search-item="syncRows"
+                @clear-item="clearSearch"
+              />
+            </div>
+            <div class="col-auto">
+              <q-btn label="검색" color="dark" unelevated @click="syncRows" />
+            </div>
           </div>
-          <div class="col-auto">
-            <q-btn label="검색" color="dark" unelevated @click="syncRows" />
-          </div>
+          <q-btn label="+ 새 약관 등록" color="dark" outline @click="openCreate" />
         </div>
       </template>
 
       <template #action="{ slotProps }">
         <q-btn flat dense no-caps color="primary" label="내용 보기" @click="viewContent(slotProps.row)" />
-        <q-btn
-          v-if="slotProps.row.status === 'current'"
-          flat
-          dense
-          no-caps
-          color="dark"
-          label="수정"
-          @click="editVersion(slotProps.row)"
-        />
+        <q-btn flat dense no-caps color="dark" label="수정" @click="editVersion(slotProps.row)" />
+        <q-btn flat dense no-caps color="red" label="삭제" @click="openDelete(slotProps.row)" />
       </template>
     </PageTable>
 
-    <!-- 새 버전 등록 / 수정 폼 -->
+    <!-- 등록 / 수정 폼 -->
     <q-slide-transition>
       <q-card v-if="showForm" flat bordered class="q-pa-md q-mt-md">
-        <div class="text-subtitle1 text-bold q-mb-md">{{ editingId ? '버전 수정' : '버전 등록' }}</div>
-        <div class="row q-col-gutter-sm q-mb-sm">
-          <div class="col-12 col-md-3">
-            <div class="field-label">버전명</div>
-            <q-input v-model="form.version" dense outlined placeholder="예: v4" />
+        <div class="text-subtitle1 text-bold q-mb-md">{{ editingId ? '약관 수정' : '약관 등록' }}</div>
+        <div class="row q-col-gutter-sm q-mb-sm items-center">
+          <div class="col-12 col-md-8">
+            <div class="field-label">제목</div>
+            <q-input v-model="form.title" dense outlined placeholder="약관 제목을 입력해주세요" />
           </div>
-          <div class="col-12 col-md-3">
-            <div class="field-label">시행일</div>
-            <q-input v-model="form.effectiveDate" dense outlined placeholder="예: 2025.07.01" />
-          </div>
-          <div class="col-12 col-md-6">
-            <div class="field-label">요약</div>
-            <q-input v-model="form.summary" dense outlined placeholder="변경 내용 요약" />
+          <div class="col-12 col-md-4">
+            <div class="field-label">필수 여부</div>
+            <q-toggle v-model="form.isRequired" label="필수 동의 항목" />
           </div>
         </div>
+        <div class="field-label q-mb-xs">내용</div>
         <q-editor
-          v-model="form.body"
+          v-model="form.contents"
           :toolbar="[['bold', 'italic'], ['link']]"
-          min-height="120px"
-          :placeholder="bodyPlaceholder"
+          min-height="160px"
+          placeholder="약관 전문을 입력해주세요"
         />
         <div class="row justify-end q-gutter-sm q-mt-md">
           <q-btn label="취소" color="grey-7" outline @click="closeForm" />
+          <template v-if="editingId">
+            <q-btn label="임시저장" color="grey-8" outline :disable="!canSubmit" @click="submit('draft')" />
+            <q-btn label="게시" color="dark" unelevated text-color="white" :disable="!canSubmit" @click="submit('publish')" />
+          </template>
           <q-btn
+            v-else
             label="등록"
             color="dark"
             unelevated
             text-color="white"
-            :disable="!form.version.trim()"
-            @click="submit"
+            :disable="!canSubmit"
+            @click="submit('create')"
           />
         </div>
       </q-card>
     </q-slide-transition>
 
-    <!-- 내용 보기 모달 -->
+    <!-- 내용 보기 -->
     <q-dialog v-model="showView">
       <q-card style="width: 620px; max-width: 90vw">
         <q-card-section class="row items-center justify-between bg-grey-2 q-px-lg">
-          <div class="text-h6 text-bold">{{ viewing?.version }} 내용</div>
+          <div class="text-h6 text-bold">{{ viewing?.title }}</div>
           <q-btn v-close-popup flat round dense icon="close" />
         </q-card-section>
         <q-separator />
-        <q-card-section class="terms-body q-px-lg" v-html="viewing?.body" />
+        <q-card-section class="terms-body q-px-lg">
+          <!-- 관리자가 q-editor로 작성한 약관 본문 HTML (BO 내부 신뢰 콘텐츠) -->
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div v-html="viewing?.contents" />
+        </q-card-section>
       </q-card>
     </q-dialog>
+
+    <!-- 삭제 확인 -->
+    <ProcessConfirmModal
+      v-model:show="showDelete"
+      title="약관 삭제"
+      :message="deleteMessage"
+      confirm-label="삭제"
+      confirm-color="red"
+      @confirm="onDeleteConfirm"
+    />
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
+import { useQuasar } from 'quasar'
+import dayjs from 'dayjs'
 import PageTable from '@/components/table/PageTable.vue'
 import TableSearch from '@/components/table/TableSearch.vue'
+import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
+import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
+import COMMON from '@/constants/commonConstatns'
+import { termsApi } from '@/service/bo/terms'
 import { STATUS_META, badgeHtml } from './termsMeta'
 
 const props = defineProps({
-  /** 초기 버전 목록 */
-  initialVersions: {
-    type: Array,
-    default: () => []
+  /** 약관 유형 ID */
+  agreementTypeId: {
+    type: Number,
+    required: true
   },
-  bodyPlaceholder: {
+  typeTitle: {
     type: String,
-    default: '약관 전문을 입력해주세요'
+    default: ''
   }
 })
 
-/** 로컬 버전 목록 (탭별 독립 관리) */
-const versions = ref(props.initialVersions.map((v) => ({ ...v })))
+const emitter = inject('emitter')
+const $q = useQuasar()
 
+const allTerms = ref([])
 const searchKeyword = ref('')
 
 const tableRef = ref(null)
@@ -127,39 +140,72 @@ const tableModel = ref({
   selected: [],
   filterAndSearchData: {},
   header: [
-    { name: 'version', label: '버전', field: 'version', align: 'left', tooltip: false },
-    { name: 'effectiveDate', label: '시행일', field: 'effectiveDate', align: 'center', tooltip: false },
-    { name: 'summary', label: '요약', field: 'summary', align: 'left', tooltip: false, headerStyle: 'min-width: 14rem' },
-    { name: 'status', label: '상태', field: 'status', align: 'center', tooltip: false, format: (v) => badgeHtml(STATUS_META[v]) },
+    { name: 'title', label: '제목', field: 'title', align: 'left', tooltip: false, headerStyle: 'min-width: 16rem' },
+    {
+      name: 'createAt',
+      label: '등록일',
+      field: 'createAt',
+      align: 'center',
+      tooltip: false,
+      format: (v) => (v ? dayjs(v).format('YYYY.MM.DD') : '-')
+    },
+    {
+      name: 'current',
+      label: '상태',
+      field: 'current',
+      align: 'center',
+      tooltip: false,
+      format: (v) => badgeHtml(v ? STATUS_META.current : STATUS_META.previous)
+    },
     { name: 'action', label: '액션', field: 'id', align: 'center', tooltip: false, slot: 'action' }
   ],
   rows: [],
   pagination: { page: 1, rowsPerPage: 15, rowsNumber: 0 }
 })
 
+const showError = (e) => {
+  const message = e?.error?.message || e?.message || '처리 중 오류가 발생했습니다.'
+  $q.dialog({ component: AlarmDialog, componentProps: { title: '오류', message } })
+}
+
+const loadTerms = async () => {
+  const res = await termsApi.getList({ agreementTypeId: props.agreementTypeId, page: 0, size: 100 })
+  allTerms.value = res?.terms ?? []
+  syncRows()
+}
+
+const fetchTerms = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await loadTerms()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
+}
+
 const syncRows = () => {
   const kw = searchKeyword.value.trim().toLowerCase()
   const filtered = kw
-    ? versions.value.filter(
-        (v) => v.version.toLowerCase().includes(kw) || v.summary.toLowerCase().includes(kw)
-      )
-    : versions.value
+    ? allTerms.value.filter((t) => (t.title || '').toLowerCase().includes(kw))
+    : allTerms.value
   tableModel.value.rows = filtered
   tableModel.value.pagination.rowsNumber = filtered.length
 }
-
 const clearSearch = () => {
   searchKeyword.value = ''
   syncRows()
 }
 
-/** 등록/수정 폼 */
+/* 등록 / 수정 폼 */
 const showForm = ref(false)
 const editingId = ref(null)
-const form = ref({ version: '', effectiveDate: '', summary: '', body: '' })
+const form = ref({ title: '', contents: '', isRequired: true })
+const canSubmit = computed(() => !!form.value.title.trim())
 
 const resetForm = () => {
-  form.value = { version: '', effectiveDate: '', summary: '', body: '' }
+  form.value = { title: '', contents: '', isRequired: true }
   editingId.value = null
 }
 const openCreate = () => {
@@ -171,45 +217,87 @@ const closeForm = () => {
   resetForm()
 }
 
-/** 수정: 현행 버전만 가능 */
-const editVersion = (row) => {
-  editingId.value = row.id
-  form.value = {
-    version: row.version,
-    effectiveDate: row.effectiveDate,
-    summary: row.summary,
-    body: row.body
+const editVersion = async (row) => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    const detail = await termsApi.getDetail(row.id)
+    editingId.value = row.id
+    // 상세 응답에 isRequired 가 없어 기본값 true 로 둔다 (필요시 수정)
+    form.value = {
+      title: detail?.title ?? row.title ?? '',
+      contents: detail?.contents ?? '',
+      isRequired: true
+    }
+    showForm.value = true
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
   }
-  showForm.value = true
 }
 
-const submit = () => {
-  if (!form.value.version.trim()) return
-  if (editingId.value) {
-    const target = versions.value.find((v) => v.id === editingId.value)
-    if (target) Object.assign(target, { ...form.value })
-  } else {
-    // 신규 등록: 기존 현행 → 이전, 신규 → 현행
-    versions.value.forEach((v) => {
-      if (v.status === 'current') v.status = 'previous'
-    })
-    const newId = Math.max(0, ...versions.value.map((v) => v.id)) + 1
-    versions.value.unshift({ id: newId, ...form.value, status: 'current' })
+const submit = async (mode) => {
+  if (!canSubmit.value) return
+  const body = {
+    agreementTypeId: props.agreementTypeId,
+    title: form.value.title.trim(),
+    contents: form.value.contents,
+    isRequired: form.value.isRequired
   }
-  syncRows()
-  closeForm()
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    if (mode === 'create') await termsApi.save(body)
+    else if (mode === 'draft') await termsApi.saveDraft(editingId.value, body)
+    else if (mode === 'publish') await termsApi.publish(editingId.value, body)
+    closeForm()
+    await loadTerms()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
-/** 내용 보기 (이전 버전 포함 모두 가능, 읽기 전용) */
+/* 내용 보기 */
 const showView = ref(false)
 const viewing = ref(null)
-const viewContent = (row) => {
-  viewing.value = row
-  showView.value = true
+const viewContent = async (row) => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    const detail = await termsApi.getDetail(row.id)
+    viewing.value = { title: detail?.title ?? row.title, contents: detail?.contents ?? '' }
+    showView.value = true
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
+}
+
+/* 삭제 */
+const showDelete = ref(false)
+const deleteTarget = ref(null)
+const deleteMessage = computed(() =>
+  deleteTarget.value ? `"${deleteTarget.value.title}" 약관을 삭제하시겠어요?` : ''
+)
+const openDelete = (row) => {
+  deleteTarget.value = row
+  showDelete.value = true
+}
+const onDeleteConfirm = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await termsApi.remove(deleteTarget.value.id)
+    await loadTerms()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
 onMounted(() => {
-  syncRows()
+  fetchTerms()
 })
 </script>
 

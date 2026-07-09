@@ -1,9 +1,9 @@
 <template>
   <div>
     <PageTable
-      class="q-pa-md"
       ref="tableRef"
       v-model="tableModel"
+      class="q-pa-md"
       :row-key="'id'"
       :table-style="{ minHeight: '45vh' }"
       content-area-class="q-pb-sm"
@@ -34,7 +34,7 @@
           <div class="col-6 col-md-3">
             <q-select
               v-model="tableModel.filter.type"
-              :options="INQUIRY_TYPE_OPTIONS"
+              :options="typeOptions"
               dense
               outlined
               emit-value
@@ -61,26 +61,32 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
+import { useQuasar } from 'quasar'
+import dayjs from 'dayjs'
 import PageTable from '@/components/table/PageTable.vue'
 import TableSearch from '@/components/table/TableSearch.vue'
 import InquiryDetailPanel from './InquiryDetailPanel.vue'
-import {
-  INQUIRY_TYPE_META,
-  INQUIRY_STATUS_META,
-  INQUIRY_STATUS_OPTIONS,
-  INQUIRY_TYPE_OPTIONS,
-  badgeHtml
-} from './supportMeta'
+import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
+import COMMON from '@/constants/commonConstatns'
+import { inquiryApi } from '@/service/bo/inquiry'
+import { INQUIRY_STATUS_META, INQUIRY_STATUS_OPTIONS, badgeHtml, typeBadgeHtml } from './supportMeta'
 
 const emit = defineEmits(['pending-count'])
 
-/** 목업 1:1 문의 데이터 */
-const inquiries = ref([
-  { id: 301, member: '김종민', memberId: 1021, type: 'account', title: '학교 이메일 인증 처리 안 됩니다', content: '학교 이메일로 인증 신청을 했는데 3일이 지나도 처리가 안 됩니다. 확인 부탁드립니다.', receivedDate: '2025.06.07', status: 'pending', answer: '' },
-  { id: 299, member: '이수현', memberId: 1022, type: 'matching', title: '채팅방에 오류가 발생했어요', content: '채팅방 입장 시 오류가 발생합니다. 확인 부탁드립니다.', receivedDate: '2025.06.06', status: 'pending', answer: '' },
-  { id: 294, member: '박민준', memberId: 1009, type: 'bug', title: '앱이 갑자기 종료됩니다', content: '앱 사용 중 자주 종료됩니다.', receivedDate: '2025.06.04', status: 'answered', answer: '확인 결과 일시적 오류였으며 최신 버전에서 해결되었습니다.' },
-  { id: 288, member: '최예린', memberId: 1008, type: 'etc', title: '서비스 이용 관련 문의', content: '서비스 이용 방법이 궁금합니다.', receivedDate: '2025.06.02', status: 'answered', answer: '고객센터 FAQ를 참고해주세요.' }
+const emitter = inject('emitter')
+const $q = useQuasar()
+
+const showError = (e) => {
+  const message = e?.error?.message || e?.message || '처리 중 오류가 발생했습니다.'
+  $q.dialog({ component: AlarmDialog, componentProps: { title: '오류', message } })
+}
+
+const allInquiries = ref([])
+const categories = ref([])
+const typeOptions = computed(() => [
+  { label: '유형 전체', value: 'all' },
+  ...categories.value.map((c) => ({ label: c.name, value: c.name }))
 ])
 
 const tableRef = ref(null)
@@ -91,10 +97,17 @@ const tableModel = ref({
   filterAndSearchData: {},
   header: [
     { name: 'id', label: '문의 ID', field: 'id', align: 'left', tooltip: false, format: (v) => `<span>#${v}</span>` },
-    { name: 'member', label: '회원명', field: 'member', align: 'left', tooltip: false },
-    { name: 'type', label: '유형', field: 'type', align: 'center', tooltip: false, format: (v) => badgeHtml(INQUIRY_TYPE_META[v]) },
+    { name: 'writer', label: '회원명', field: 'writer', align: 'left', tooltip: false },
+    { name: 'type', label: '유형', field: 'type', align: 'center', tooltip: false, format: (v) => typeBadgeHtml(v) },
     { name: 'title', label: '제목', field: 'title', align: 'left', tooltip: false, headerStyle: 'min-width: 12rem' },
-    { name: 'receivedDate', label: '접수일', field: 'receivedDate', align: 'center', tooltip: false },
+    {
+      name: 'createAt',
+      label: '접수일',
+      field: 'createAt',
+      align: 'center',
+      tooltip: false,
+      format: (v) => (v ? dayjs(v).format('YYYY.MM.DD') : '-')
+    },
     { name: 'status', label: '상태', field: 'status', align: 'center', tooltip: false, format: (v) => badgeHtml(INQUIRY_STATUS_META[v]) },
     {
       name: 'action',
@@ -110,24 +123,48 @@ const tableModel = ref({
 })
 
 const emitPendingCount = () => {
-  emit('pending-count', inquiries.value.filter((i) => i.status === 'pending').length)
+  emit('pending-count', allInquiries.value.filter((i) => i.status === '답변 대기중').length)
+}
+
+const loadCategories = async () => {
+  const res = await inquiryApi.getCategoryList()
+  categories.value = res?.inquirieCategorys ?? []
+}
+
+const loadInquiries = async () => {
+  const res = await inquiryApi.getList({ page: 0, size: 100 })
+  allInquiries.value = res?.inquiries ?? []
+  onRequest()
+  emitPendingCount()
+}
+
+const fetchInquiries = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await Promise.all([loadCategories(), loadInquiries()])
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
 const applySearch = () => {
   tableModel.value.pagination.page = 1
-  tableRef.value.requestServerInteraction()
+  onRequest()
 }
 const clearSearch = () => {
   tableModel.value.search.inputFilter = ''
   tableModel.value.pagination.page = 1
-  tableRef.value.requestServerInteraction()
+  onRequest()
 }
 
 const getFiltered = () => {
   const kw = (tableModel.value.search.inputFilter || '').trim().toLowerCase()
   const { status, type } = tableModel.value.filter
-  return inquiries.value.filter((i) => {
-    const keywordOk = !kw || i.member.toLowerCase().includes(kw) || i.content.toLowerCase().includes(kw)
+  return allInquiries.value.filter((i) => {
+    const keywordOk =
+      !kw || (i.writer || '').toLowerCase().includes(kw) || (i.title || '').toLowerCase().includes(kw)
     const statusOk = status === 'all' || i.status === status
     const typeOk = type === 'all' || i.type === type
     return keywordOk && statusOk && typeOk
@@ -145,21 +182,35 @@ const onRequest = () => {
 /** 상세 패널 */
 const showDetail = ref(false)
 const selectedInquiry = ref(null)
-const openDetail = (row) => {
-  selectedInquiry.value = row
-  showDetail.value = true
+const openDetail = async (row) => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    const detail = await inquiryApi.getDetail(row.id)
+    selectedInquiry.value = detail?.inquirie ?? null
+    showDetail.value = true
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
 /** 답변 전송 → 상태 답변완료 전환, 처리자·일시 자동 기록 */
-const onAnswer = (text) => {
-  selectedInquiry.value.answer = text
-  selectedInquiry.value.status = 'answered'
-  onRequest()
-  emitPendingCount()
+const onAnswer = async (text) => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await inquiryApi.reply({ inquirieId: selectedInquiry.value.id, contents: text })
+    const detail = await inquiryApi.getDetail(selectedInquiry.value.id)
+    selectedInquiry.value = detail?.inquirie ?? null
+    await loadInquiries()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
 onMounted(() => {
-  tableRef.value.requestServerInteraction()
-  emitPendingCount()
+  fetchInquiries()
 })
 </script>

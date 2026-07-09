@@ -9,57 +9,40 @@
     <template #content>
       <!-- 유형 -->
       <div class="field-label">유형</div>
-      <q-btn-toggle
+      <q-select
         v-model="type"
-        :options="[
-          { label: '슬라이더', value: 'slider' },
-          { label: '칩 선택', value: 'chip' }
-        ]"
-        spread
-        no-caps
-        unelevated
-        toggle-color="dark"
-        color="grey-3"
-        text-color="grey-8"
-        class="q-mb-md full-width"
-        @update:model-value="onTypeChange"
+        :options="TYPE_SELECT_OPTIONS"
+        dense
+        outlined
+        emit-value
+        map-options
+        class="q-mb-md"
       />
 
       <!-- 항목명 -->
       <div class="field-label">항목명</div>
       <q-input v-model="name" dense outlined placeholder="예: 취침 시간" class="q-mb-md" />
 
-      <!-- 슬라이더형 -->
-      <template v-if="type === 'slider'">
-        <div class="field-label">양 끝 레이블</div>
-        <q-input v-model="minLabel" dense outlined label="최솟값" placeholder="예: 일찍 자요" class="q-mb-sm" />
-        <q-input v-model="maxLabel" dense outlined label="최댓값" placeholder="예: 늦게 자요" class="q-mb-md" />
-
-        <div class="field-label">단계 수 <span class="text-grey-6 text-caption">— 앱 슬라이더 스텝 결정</span></div>
-        <q-input v-model.number="steps" type="number" dense outlined min="1" class="q-mb-md" />
-      </template>
-
-      <!-- 칩 선택형 -->
-      <template v-else>
-        <div class="field-label">선택지 목록 <span class="text-grey-6 text-caption">— 최소 2개</span></div>
-        <div v-for="(opt, i) in options" :key="i" class="row items-center no-wrap q-gutter-sm q-mb-sm">
-          <q-input v-model="options[i]" dense outlined class="col" :placeholder="`선택지 ${i + 1}`" />
-          <q-btn
-            v-if="options.length > 2"
-            label="삭제"
-            color="red"
-            outline
-            dense
-            class="bg-red-1"
-            @click="removeOption(i)"
-          />
-        </div>
-        <q-btn label="+ 선택지 추가" outline color="grey-7" class="full-width q-mb-md" @click="addOption" />
-      </template>
-
       <!-- 우선순위 -->
       <div class="field-label">우선순위 <span class="text-grey-6 text-caption">— 낮을수록 앞에 노출</span></div>
-      <q-input v-model.number="order" type="number" dense outlined min="1" />
+      <q-input v-model.number="sort" type="number" dense outlined min="1" class="q-mb-md" />
+
+      <!-- 선택지/값 목록 -->
+      <div class="field-label">선택지 <span class="text-grey-6 text-caption">— 최소 1개</span></div>
+      <div v-for="(d, i) in details" :key="i" class="row items-center no-wrap q-gutter-sm q-mb-sm">
+        <q-input v-model="d.values" dense outlined class="col-4" :placeholder="`값 ${i + 1}`" />
+        <q-input v-model="d.description" dense outlined class="col" placeholder="설명 (선택)" />
+        <q-btn
+          v-if="details.length > 1"
+          label="삭제"
+          color="red"
+          outline
+          dense
+          class="bg-red-1"
+          @click="removeDetail(i)"
+        />
+      </div>
+      <q-btn label="+ 선택지 추가" outline color="grey-7" class="full-width" @click="addDetail" />
     </template>
 
     <template #button>
@@ -79,11 +62,12 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import BasicConfirm from '@/components/modal/BasicConfirm.vue'
+import { TYPE_SELECT_OPTIONS } from './lifePatternMeta'
 
 const show = defineModel('show', { type: Boolean, default: false })
 
 const props = defineProps({
-  /** 수정 시 기존 항목, 추가 시 null */
+  /** 수정 시 기존 항목({ id, name, type, sort, details }), 추가 시 null */
   pattern: {
     type: Object,
     default: null
@@ -94,61 +78,44 @@ const emit = defineEmits(['save'])
 
 const isEdit = computed(() => !!props.pattern)
 
-const type = ref('slider')
+const type = ref('SCALE')
 const name = ref('')
-const minLabel = ref('')
-const maxLabel = ref('')
-const steps = ref(5)
-const options = ref(['', ''])
-const order = ref(1)
+const sort = ref(1)
+const details = ref([{ values: '', description: '' }])
 
 /** 모달이 열릴 때 props.pattern 기준으로 폼 초기화 */
 const initForm = () => {
   const p = props.pattern
-  type.value = p?.type ?? 'slider'
+  type.value = p?.type ?? 'SCALE'
   name.value = p?.name ?? ''
-  minLabel.value = p?.minLabel ?? ''
-  maxLabel.value = p?.maxLabel ?? ''
-  steps.value = p?.steps ?? 5
-  options.value = p?.options?.length ? [...p.options] : ['', '']
-  order.value = p?.order ?? 1
+  sort.value = p?.sort ?? 1
+  details.value = p?.details?.length
+    ? p.details.map((d) => ({ values: d.values ?? '', description: d.description ?? '' }))
+    : [{ values: '', description: '' }]
 }
 watch(show, (v) => {
   if (v) initForm()
 })
 
-/** 유형 변경 시 하위 필드 초기화 */
-const onTypeChange = () => {
-  minLabel.value = ''
-  maxLabel.value = ''
-  steps.value = 5
-  options.value = ['', '']
-}
-
-const addOption = () => options.value.push('')
-const removeOption = (i) => {
-  if (options.value.length > 2) options.value.splice(i, 1)
+const addDetail = () => details.value.push({ values: '', description: '' })
+const removeDetail = (i) => {
+  if (details.value.length > 1) details.value.splice(i, 1)
 }
 
 const isValid = computed(() => {
   if (!name.value.trim()) return false
-  if (type.value === 'slider') {
-    return !!minLabel.value.trim() && !!maxLabel.value.trim() && Number(steps.value) >= 1
-  }
-  return options.value.map((o) => o.trim()).filter(Boolean).length >= 2
+  return details.value.some((d) => d.values.trim())
 })
 
 const onSave = () => {
   if (!isValid.value) return
   emit('save', {
-    type: type.value,
     name: name.value.trim(),
-    visible: props.pattern?.visible ?? true,
-    minLabel: type.value === 'slider' ? minLabel.value.trim() : '',
-    maxLabel: type.value === 'slider' ? maxLabel.value.trim() : '',
-    steps: type.value === 'slider' ? Number(steps.value) : 5,
-    options: type.value === 'chip' ? options.value.map((o) => o.trim()).filter(Boolean) : [],
-    order: Number(order.value) || 1
+    type: type.value,
+    sort: Number(sort.value) || 1,
+    details: details.value
+      .map((d) => ({ values: d.values.trim(), description: d.description.trim() }))
+      .filter((d) => d.values)
   })
   show.value = false
 }
