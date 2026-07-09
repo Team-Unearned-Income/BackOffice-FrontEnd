@@ -1,16 +1,30 @@
 ﻿<#
-로컬 knockin-backend(H2 인메모리)의 MEMBER 테이블 role을 ADMIN으로 승격.
-H2는 인메모리 DB라 컨테이너가 재시작되면 데이터가 초기화되므로,
+로컬 knockin-backend의 MEMBER 테이블 role을 ADMIN으로 승격.
+
+기본(H2 인메모리, jdbc:h2:mem:testdb)인 경우: 컨테이너가 재시작되면 데이터가 초기화되므로,
 카카오 로그인으로 계정을 다시 만든 뒤 이 스크립트를 재실행해야 함.
 
+setup-persistent-backend.ps1로 파일 기반 H2(jdbc:h2:file:/data/testdb)로 전환했다면
+-JdbcUrl File 을 넘겨야 접속 대상이 맞음 (데이터가 유지되므로 보통 최초 1회만 실행하면 됨).
+
 사용법:
-  .\scripts\grant-admin.ps1            # 전체 MEMBER를 ADMIN으로 승격
-  .\scripts\grant-admin.ps1 -Select    # 승격 없이 MEMBER 테이블만 조회
+  .\scripts\grant-admin.ps1                       # 기본(mem) — 전체 MEMBER를 ADMIN으로 승격
+  .\scripts\grant-admin.ps1 -Select                # 승격 없이 MEMBER 테이블만 조회
+  .\scripts\grant-admin.ps1 -JdbcUrl File          # setup-persistent-backend.ps1 사용 중일 때
 #>
 param(
     [string]$Container = 'knockin-backend',
-    [switch]$Select
+    [switch]$Select,
+    [ValidateSet('Mem', 'File')]
+    [string]$JdbcUrl = 'Mem'
 )
+
+$h2Url = if ($JdbcUrl -eq 'File') {
+    'jdbc:h2:file:/data/testdb;MODE=PostgreSQL'
+} else {
+    'jdbc:h2:mem:testdb'
+}
+$h2UrlEncoded = [uri]::EscapeDataString($h2Url)
 
 $running = docker ps --filter "name=$Container" --format '{{.Names}}'
 if (-not $running) {
@@ -22,7 +36,7 @@ $sql = if ($Select) { 'sql=SELECT+%2A+FROM+MEMBER' } else { 'sql=UPDATE+MEMBER+S
 
 $shScript = @"
 JID=`$(wget -qO- http://localhost:8080/h2-console/ | grep -oE 'jsessionid=[a-zA-Z0-9]+' | head -1 | cut -d= -f2)
-wget -qO- "http://localhost:8080/h2-console/login.do?jsessionid=`$JID&driver=org.h2.Driver&url=jdbc%3Ah2%3Amem%3Atestdb&user=sa&password=" > /dev/null
+wget -qO- "http://localhost:8080/h2-console/login.do?jsessionid=`$JID&driver=org.h2.Driver&url=$h2UrlEncoded&user=sa&password=" > /dev/null
 wget -qO- "http://localhost:8080/h2-console/query.do?jsessionid=`$JID&$sql"
 "@
 
