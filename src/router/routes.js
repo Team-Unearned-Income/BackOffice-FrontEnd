@@ -9,6 +9,8 @@ import reportRoutes from '/src/pages/report/routes.js'
 import verificationRoutes from '/src/pages/verification/routes.js'
 import supportRoutes from '/src/pages/support/routes.js'
 import lifePatternRoutes from '/src/pages/lifePattern/routes.js'
+import mailDomainRoutes from '/src/pages/mailDomain/routes.js'
+import appVersionRoutes from '/src/pages/appVersion/routes.js'
 import roomTypeRoutes from '/src/pages/roomType/routes.js'
 import termsRoutes from '/src/pages/terms/routes.js'
 
@@ -36,6 +38,8 @@ const routes = [
       ...verificationRoutes,
       ...supportRoutes,
       ...lifePatternRoutes,
+      ...mailDomainRoutes,
+      ...appVersionRoutes,
       ...roomTypeRoutes,
       ...termsRoutes,
     ]
