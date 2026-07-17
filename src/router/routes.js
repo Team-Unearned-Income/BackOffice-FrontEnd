@@ -19,8 +19,6 @@ import termsRoutes from '/src/pages/terms/routes.js'
 const routes = [
   {
     path: '/',
-    // UI 작업용: 로그인 없이 첫 화면(대시보드)으로 바로 진입. 로그인은 /login 으로 여전히 접근 가능.
-    // TODO: 백엔드 연동 후 redirect: { name: 'Login' } 로 복구
     redirect: '/dashboard'
   },
   // 소셜 로그인 / OAuth 콜백 (LNB·헤더 없는 단독 화면)
