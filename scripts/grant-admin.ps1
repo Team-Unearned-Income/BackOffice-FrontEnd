@@ -1,4 +1,4 @@
-<#
+﻿<#
 로컬 knockin-backend의 MEMBER 테이블 role을 ADMIN으로 승격.
 
 컨테이너가 파일 기반 H2(setup-persistent-backend.ps1)인지 기본 인메모리(mem) 상태인지
@@ -28,25 +28,26 @@ function Get-H2Url([string]$mode) {
     if ($mode -eq 'File') { 'jdbc:h2:file:/data/testdb;MODE=PostgreSQL' } else { 'jdbc:h2:mem:testdb' }
 }
 
-# docker exec 인자로 넘기면 Windows 쪽 따옴표/개행 이스케이프가 깨지고,
-# PowerShell 파이프(|)로 넘기면 BOM+CRLF가 섞여 sh가 첫 줄을 못 읽으므로
-# LF/ASCII 임시 파일을 만들어 cmd 리다이렉션(<)으로 stdin에 흘려보낸다.
+# 최신 knockin-be 이미지엔 sh/wget이 없어(docker exec 불가) 컨테이너 내부에서 명령을 못 돌린다.
+# 대신 --network container:$container 로 knockin-backend와 네트워크 네임스페이스를 공유하는
+# 1회용 curl 컨테이너를 띄운다 — H2 콘솔 입장에선 127.0.0.1(로컬)에서 온 요청이라
+# webAllowOthers=false 제한(원격 차단)에 안 걸린다.
 function Invoke-H2Query([string]$container, [string]$h2Url, [string]$sql) {
     $h2UrlEncoded = [uri]::EscapeDataString($h2Url)
-    $shScript = @"
-JID=`$(wget -qO- http://localhost:8080/h2-console/ | grep -oE 'jsessionid=[a-zA-Z0-9]+' | head -1 | cut -d= -f2)
-wget -qO- "http://localhost:8080/h2-console/login.do?jsessionid=`$JID&driver=org.h2.Driver&url=$h2UrlEncoded&user=sa&password=" > /dev/null
-wget -qO- "http://localhost:8080/h2-console/query.do?jsessionid=`$JID&$sql"
-"@
-    $tmpFile = New-TemporaryFile
-    try {
-        $lfScript = $shScript -replace "`r`n", "`n"
-        [System.IO.File]::WriteAllText($tmpFile.FullName, $lfScript, [System.Text.Encoding]::ASCII)
-        (cmd /c "docker exec -i $container sh < `"$($tmpFile.FullName)`"") -join "`n"
-    }
-    finally {
-        Remove-Item $tmpFile.FullName -ErrorAction SilentlyContinue
-    }
+    $curlImage = 'curlimages/curl:latest'
+
+    $indexHtml = docker run --rm --network "container:$container" $curlImage -s 'http://127.0.0.1:8080/h2-console/'
+    if ($LASTEXITCODE -ne 0 -or -not $indexHtml) { return $null }
+
+    $match = [regex]::Match(($indexHtml -join "`n"), 'jsessionid=([a-zA-Z0-9]+)')
+    if (-not $match.Success) { return $null }
+    $jid = $match.Groups[1].Value
+
+    docker run --rm --network "container:$container" $curlImage -s `
+        "http://127.0.0.1:8080/h2-console/login.do?jsessionid=$jid&driver=org.h2.Driver&url=$h2UrlEncoded&user=sa&password=" | Out-Null
+
+    (docker run --rm --network "container:$container" $curlImage -s `
+        "http://127.0.0.1:8080/h2-console/query.do?jsessionid=$jid&$sql") -join "`n"
 }
 
 # H2 콘솔이 접속 대상 DB를 못 찾으면 "class=""error""" / NPE가 섞인 HTML을 돌려준다 (성공 시엔 없음).
