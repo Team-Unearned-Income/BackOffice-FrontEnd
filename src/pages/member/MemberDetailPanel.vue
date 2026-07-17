@@ -29,21 +29,13 @@
       <!-- 2. 신원 인증 현황 -->
       <div>
         <div class="panel-section-title">신원 인증 현황</div>
-        <div class="row items-center q-py-xs">
-          <div class="col-4 text-grey-7">신원 인증</div>
-          <div class="col">
-            <q-chip dense size="sm" :style="{ backgroundColor: verifyMeta.bg, color: verifyMeta.text }">
-              {{ verifyMeta.label }}
-            </q-chip>
-          </div>
-        </div>
         <div class="row q-py-xs">
           <div class="col-4 text-grey-7">학교 이메일</div>
-          <div class="col">{{ member.schoolEmail || '미인증' }}</div>
+          <div class="col">{{ schoolEmail || '미인증' }}</div>
         </div>
         <div class="row q-py-xs">
           <div class="col-4 text-grey-7">회사 이메일</div>
-          <div class="col">{{ member.companyEmail || '미인증' }}</div>
+          <div class="col">{{ companyEmail || '미인증' }}</div>
         </div>
       </div>
 
@@ -68,13 +60,13 @@
             @click="showGrant = true"
           />
           <q-btn
-            v-else-if="member.role === 'admin' && !isSelf"
+            v-else-if="member.role === 'ADMIN' && !isSelf"
             label="admin 권한 회수"
             color="grey-8"
             outline
             @click="showRevoke = true"
           />
-          <div v-if="member.role === 'admin' && isSelf" class="text-caption text-grey-6">
+          <div v-if="member.role === 'ADMIN' && isSelf" class="text-caption text-grey-6">
             본인 계정은 권한을 회수할 수 없습니다.
           </div>
         </div>
@@ -83,27 +75,20 @@
       <!-- 4. 신고 이력 -->
       <div>
         <div class="panel-section-title">신고 이력</div>
-        <div class="text-body2">신고 받은 횟수: {{ member.reportCount }}건</div>
+        <div class="text-body2">신고 받은 횟수: {{ member.reportCount ?? 0 }}건</div>
       </div>
     </q-card-section>
 
     <q-separator />
-    <!-- 5. 액션 (상태에 따라 변경) -->
+    <!-- 5. 액션 — 정지 해제 API가 없어 정지만 가능(되돌릴 수 없음) -->
     <q-card-actions align="right" class="q-px-lg q-py-md">
       <q-btn
-        v-if="member.status === 'active'"
+        v-if="member.state === 'ACTIVE'"
         label="정지"
         class="bg-red-1 text-bold"
         color="red"
         outline
         @click="showSuspend = true"
-      />
-      <q-btn
-        v-else-if="member.status === 'suspended'"
-        label="정지 해제"
-        color="primary"
-        outline
-        @click="showUnsuspend = true"
       />
     </q-card-actions>
 
@@ -111,20 +96,12 @@
     <ProcessConfirmModal
       v-model:show="showSuspend"
       title="회원을 정지하시겠어요?"
-      :message="`${member.name} (#${member.id})을 무기한 정지합니다.\n정지 즉시 앱 로그인이 불가합니다.`"
+      :message="`${member.name} (#${member.id})을 무기한 정지합니다.\n정지 즉시 앱 로그인이 불가하며, 되돌릴 수 있는 기능이 없습니다.`"
       require-reason
-      reason-label="정지 사유 (필수)"
+      reason-label="정지 사유 (필수, 참고용 — 백엔드에 저장되지 않음)"
       confirm-label="정지 처리"
       confirm-color="red"
       @confirm="onSuspendConfirm"
-    />
-    <ProcessConfirmModal
-      v-model:show="showUnsuspend"
-      title="정지 해제"
-      :message="`${member.name} (#${member.id}) 회원의 정지를 해제하시겠어요?`"
-      confirm-label="정지 해제"
-      confirm-color="dark"
-      @confirm="onUnsuspendConfirm"
     />
     <ProcessConfirmModal
       v-model:show="showGrant"
@@ -148,11 +125,12 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import dayjs from 'dayjs'
 import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
-import { STATUS_META, VERIFY_META, ROLE_META } from './memberMeta'
+import { useAuthStore } from '@/stores/auth'
+import { STATUS_META, STATUS_UNKNOWN_META, ROLE_META, ROLE_UNKNOWN_META } from './memberMeta'
 
-/** 현재 로그인 관리자(목업) — 본인 셀프 권한 회수 방지 데모용 */
-const CURRENT_ADMIN_ID = 1015
+const authStore = useAuthStore()
 
 const props = defineProps({
   member: {
@@ -161,32 +139,34 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'suspend', 'unsuspend', 'grant', 'revoke'])
+const emit = defineEmits(['close', 'suspend', 'grant', 'revoke'])
 
-const statusMeta = computed(() => STATUS_META[props.member.status])
-const verifyMeta = computed(() => VERIFY_META[props.member.verify])
-const roleMeta = computed(() => ROLE_META[props.member.role])
+const statusMeta = computed(() => STATUS_META[props.member.state] ?? STATUS_UNKNOWN_META)
+const roleMeta = computed(() => ROLE_META[props.member.role] ?? ROLE_UNKNOWN_META)
 
-const isSelf = computed(() => props.member.id === CURRENT_ADMIN_ID)
-const canGrant = computed(() => props.member.role === 'user' && props.member.status !== 'withdrawn')
+const isSelf = computed(() => props.member.id === authStore.jwtPayload?.memberId)
+const canGrant = computed(() => props.member.role === 'USER')
+
+const findAuthEmail = (type) =>
+  (props.member.authenticationInfoList || []).find((a) => a.authenticationType === type)?.authenticationEmail
+const schoolEmail = computed(() => findAuthEmail('STUDENT'))
+const companyEmail = computed(() => findAuthEmail('COMPANY'))
 
 const basicInfo = computed(() => [
   { label: '이름', value: props.member.name },
   { label: '이메일', value: props.member.email },
-  { label: '생년월일', value: props.member.birth },
-  { label: '성별', value: props.member.gender },
-  { label: '가입일', value: props.member.joinDate }
+  { label: '생년월일', value: props.member.birth ? dayjs(props.member.birth).format('YYYY.MM.DD') : '-' },
+  { label: '성별', value: props.member.gender === 'MALE' ? '남' : props.member.gender === 'FEMALE' ? '여' : '-' },
+  { label: '가입일', value: props.member.createdAt ? dayjs(props.member.createdAt).format('YYYY.MM.DD') : '-' }
 ])
 
 /** 모달 표시 상태 */
 const showSuspend = ref(false)
-const showUnsuspend = ref(false)
 const showGrant = ref(false)
 const showRevoke = ref(false)
 
-/** 확인 핸들러 (추후 API 호출 연결 지점) */
-const onSuspendConfirm = (reason) => emit('suspend', reason)
-const onUnsuspendConfirm = () => emit('unsuspend')
+/** 확인 핸들러 */
+const onSuspendConfirm = () => emit('suspend')
 const onGrantConfirm = () => emit('grant')
 const onRevokeConfirm = () => emit('revoke')
 </script>

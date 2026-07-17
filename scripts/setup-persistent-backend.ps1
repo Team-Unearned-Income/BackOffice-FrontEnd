@@ -1,4 +1,4 @@
-<#
+﻿<#
 로컬 knockin-backend를 "데이터가 재부팅/재시작에도 유지되는" 컨테이너로 다시 만든다.
 
 왜 필요한가
@@ -69,7 +69,7 @@ docker run -d `
     --restart unless-stopped `
     -p 8080:8080 `
     -e TZ=Asia/Seoul `
-    -e SPRING_DATASOURCE_URL="jdbc:h2:file:/data/testdb;MODE=PostgreSQL;AUTO_SERVER=TRUE" `
+    -e SPRING_DATASOURCE_URL="jdbc:h2:file:/data/testdb;MODE=PostgreSQL" `
     -e SPRING_JPA_HIBERNATE_DDL_AUTO=update `
     -v "${Volume}:/data" `
     $Image | Out-Null

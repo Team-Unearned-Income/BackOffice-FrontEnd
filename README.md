@@ -45,7 +45,8 @@ npm run dev
 
 4. **어드민 role 부여 — 최초 1회만 (데이터 초기화 전까지 유지)**
    ```
-   .\scripts\grant-admin.ps1 -JdbcUrl File
+   .\scripts\grant-admin.ps1
    ```
+   컨테이너가 파일 모드(persistent)인지 인메모리 모드인지 자동으로 감지해서 접속하므로 별도 옵션 없이 그냥 실행하면 된다.
    완료 후 브라우저에서 로그아웃 → 카카오로 재로그인하면 BO 접근 권한이 반영된다.
-   (`setup-persistent-backend.ps1`을 안 쓰고 기본 인메모리 컨테이너를 그대로 쓰는 경우엔 `-JdbcUrl File` 없이 `.\scripts\grant-admin.ps1`만 실행하되, 컨테이너 재시작마다 매번 다시 실행해야 한다.)
+   (`setup-persistent-backend.ps1`을 안 쓰고 기본 인메모리 컨테이너를 그대로 쓰는 경우엔 컨테이너 재시작마다 매번 다시 실행해야 한다. 자동 감지가 안 맞으면 `-JdbcUrl File` / `-JdbcUrl Mem`으로 강제 지정 가능.)

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { ref } from 'vue'
 
 import routes from './routes.js'
+import { useAuthStore } from '@/stores/auth'
 
 /*
  * If not building with SSR mode, you can
@@ -25,21 +26,15 @@ const router = createRouter({
 
 export const setRouterBeforeEach = () => {
   return router.beforeEach((to, from, next) => {
-    // previousQueryUrl.value = from.fullPath
-    // const user = sessionStorage.getItem('user')
+    previousQueryUrl.value = from.fullPath
     if (to.matched.some((routeInfo) => routeInfo.meta.authRequired)) {
-      next()
-      // if (!user) {
-      //   alert('로그인후 이용바랍니다.')
-      //   router.replace({ name: 'Login' }).then(() => {
-      //     next()
-      //   })
-      // } else {
-      //   next()
-      // }
-    } else {
-      next()
+      const authStore = useAuthStore()
+      if (!authStore.isLoggedin) {
+        next({ name: 'Login' })
+        return
+      }
     }
+    next()
   })
 }
 

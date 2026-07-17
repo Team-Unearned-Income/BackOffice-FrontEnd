@@ -34,6 +34,14 @@ export const successResponseInterceptor = async (res) => {
     return res
   }
 
+  // 백엔드 GlobalExceptionHandler가 @RestControllerAdvice에서 CommonResponse를 그대로 반환하고
+  // ResponseEntity를 안 써서, 예외가 나도 실제 HTTP 상태 코드는 항상 200으로 내려온다
+  // (JSON 바디의 "status" 필드에만 500 등 실제 상태가 담김). axios는 2xx라 성공으로 처리해버리므로
+  // 여기서 body.error 유무를 직접 검사해서 있으면 reject 시켜야 각 서비스의 catch/showError가 동작한다.
+  if (res.data?.error) {
+    return Promise.reject(res.data)
+  }
+
   return res.data
 }
 

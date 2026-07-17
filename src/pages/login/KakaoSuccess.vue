@@ -31,7 +31,13 @@ const readCookie = (name) => {
 
 onMounted(() => {
   const token = route.query.accessToken || route.query.token || readCookie('accessToken')
-  if (token) authStore.setToken(String(token))
+  if (token) {
+    authStore.setToken(String(token))
+  } else {
+    // accessToken 쿠키가 httpOnly라 JS로 못 읽음 — 이 화면에 도달한 것 자체가
+    // 백엔드 OAuth 성공 리다이렉트이므로 로그인 상태만 표시(실제 인증은 쿠키/세션으로 처리)
+    authStore.markLoggedIn()
+  }
   router.replace({ name: 'Dashboard' })
 })
 </script>

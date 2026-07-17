@@ -12,10 +12,6 @@
         KNOCK-IN
       </div>
 
-      <div v-if="envProfile === 'dev'" class="dev-banner text-red text-h6 text-bold q-mt-sm">
-        개발 페이지입니다!!!!! (접속 주소 확인하세요)
-      </div>
-
       <div class="row items-center justify-end" style="flex-grow: 1">
         <div class="text-bold">{{ userStore.adminId }}님</div>
         <q-btn size="md" icon="logout" @click="onClickLogout" />

@@ -3,13 +3,12 @@
     <div class="text-h5 text-bold q-mb-md">회원 관리</div>
 
     <PageTable
-      class="q-pa-md"
       ref="tableRef"
       v-model="tableModel"
+      class="q-pa-md"
       :row-key="'id'"
       :table-style="{ minHeight: '45vh' }"
       content-area-class="q-pb-sm"
-      @request="onRequest"
       @row-click="(event, row) => openDetail(row)"
     >
       <!-- 1. 검색 / 필터 -->
@@ -31,6 +30,7 @@
               outlined
               emit-value
               map-options
+              @update:model-value="applySearch"
             />
           </div>
           <div class="col-6 col-md-3">
@@ -41,6 +41,7 @@
               outlined
               emit-value
               map-options
+              @update:model-value="applySearch"
             />
           </div>
           <div class="col-auto">
@@ -57,7 +58,6 @@
         :member="selectedMember"
         @close="showDetail = false"
         @suspend="onSuspend"
-        @unsuspend="onUnsuspend"
         @grant="onGrant"
         @revoke="onRevoke"
       />
@@ -67,29 +67,35 @@
 
 <script setup>
 import { inject, onMounted, ref } from 'vue'
+import { useQuasar } from 'quasar'
+import dayjs from 'dayjs'
 import COMMON from '@/constants/commonConstatns'
 import PageTable from '@/components/table/PageTable.vue'
 import TableSearch from '@/components/table/TableSearch.vue'
+import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
 import MemberDetailPanel from './MemberDetailPanel.vue'
+import { memberApi } from '@/service/bo/member'
 import {
   STATUS_META,
-  VERIFY_META,
+  STATUS_UNKNOWN_META,
+  APPROVE_META,
+  APPROVE_UNKNOWN_META,
   ROLE_META,
+  ROLE_UNKNOWN_META,
   STATUS_OPTIONS,
   VERIFY_OPTIONS,
   badgeHtml
 } from './memberMeta'
 
 const emitter = inject('emitter')
+const $q = useQuasar()
 
-/** 목업 회원 데이터 (API 연동 시 교체) */
-const members = ref([
-  { id: 1015, name: '김종민', email: 'jongmin@korea.ac.kr', joinDate: '2025.05.10', verify: 'school', role: 'admin', status: 'active', birth: '1999.03.11', gender: '남', schoolEmail: 'jongmin@korea.ac.kr', companyEmail: '', reportCount: 0 },
-  { id: 1022, name: '이수현', email: 'soohyun@naver.com', joinDate: '2025.05.12', verify: 'none', role: 'user', status: 'active', birth: '2000.07.22', gender: '여', schoolEmail: '', companyEmail: '', reportCount: 0 },
-  { id: 1019, name: '박준혁', email: 'junho@gmail.com', joinDate: '2025.04.28', verify: 'none', role: 'user', status: 'suspended', birth: '1998.12.02', gender: '남', schoolEmail: '', companyEmail: '', reportCount: 2 },
-  { id: 1008, name: '최예린', email: 'yerin@snu.ac.kr', joinDate: '2025.04.20', verify: 'school', role: 'user', status: 'withdrawn', birth: '2001.06.15', gender: '여', schoolEmail: 'yerin@snu.ac.kr', companyEmail: '', reportCount: 0 },
-  { id: 1003, name: '이동훈', email: 'dh@kakao.com', joinDate: '2025.04.18', verify: 'company', role: 'user', status: 'active', birth: '1997.09.30', gender: '남', schoolEmail: '', companyEmail: 'dh@company.com', reportCount: 0 }
-])
+const showError = (e) => {
+  const message = e?.error?.message || e?.message || '처리 중 오류가 발생했습니다.'
+  $q.dialog({ component: AlarmDialog, componentProps: { title: '오류', message } })
+}
+
+const allMembers = ref([])
 
 const tableRef = ref(null)
 const tableModel = ref({
@@ -101,17 +107,17 @@ const tableModel = ref({
     { name: 'id', label: '회원 ID', field: 'id', align: 'left', tooltip: false, format: (v) => `<span>#${v}</span>` },
     { name: 'name', label: '이름', field: 'name', align: 'left', tooltip: false },
     { name: 'email', label: '이메일', field: 'email', align: 'left', tooltip: false },
-    { name: 'joinDate', label: '가입일', field: 'joinDate', align: 'center', tooltip: false },
-    { name: 'verify', label: '신원인증', field: 'verify', align: 'center', tooltip: false, format: (v) => badgeHtml(VERIFY_META[v]) },
     {
-      name: 'role',
-      label: '권한',
-      field: 'role',
+      name: 'createdAt',
+      label: '가입일',
+      field: 'createdAt',
       align: 'center',
       tooltip: false,
-      format: (v) => (v === 'admin' ? badgeHtml(ROLE_META.admin) : '<span style="color:#616161">user</span>')
+      format: (v) => (v ? dayjs(v).format('YYYY.MM.DD') : '-')
     },
-    { name: 'status', label: '상태', field: 'status', align: 'center', tooltip: false, format: (v) => badgeHtml(STATUS_META[v]) },
+    { name: 'authenticationType', label: '신원인증', field: 'authenticationType', align: 'center', tooltip: false, format: (v) => badgeHtml(APPROVE_META[v] ?? APPROVE_UNKNOWN_META) },
+    { name: 'role', label: '권한', field: 'role', align: 'center', tooltip: false, format: (v) => badgeHtml(ROLE_META[v] ?? ROLE_UNKNOWN_META) },
+    { name: 'state', label: '상태', field: 'state', align: 'center', tooltip: false, format: (v) => badgeHtml(STATUS_META[v] ?? STATUS_UNKNOWN_META) },
     {
       name: 'action',
       label: '액션',
@@ -125,29 +131,46 @@ const tableModel = ref({
   pagination: { page: 1, rowsPerPage: 15, rowsNumber: 0 }
 })
 
+const loadMembers = async () => {
+  const res = await memberApi.getList({ page: 0, size: 100 })
+  allMembers.value = res?.memberInfoList ?? []
+  onRequest()
+}
+
+const fetchMembers = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await loadMembers()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
+}
+
 /** 검색/필터 (검색 버튼으로 적용, 1페이지로 초기화) */
 const applySearch = () => {
   tableModel.value.pagination.page = 1
-  tableRef.value.requestServerInteraction()
+  onRequest()
 }
 const clearSearch = () => {
   tableModel.value.search.inputFilter = ''
   tableModel.value.pagination.page = 1
-  tableRef.value.requestServerInteraction()
+  onRequest()
 }
 
 const getFilteredMembers = () => {
   const kw = (tableModel.value.search.inputFilter || '').trim().toLowerCase()
   const { status, verify } = tableModel.value.filter
-  return members.value.filter((m) => {
-    const keywordOk = !kw || m.name.toLowerCase().includes(kw) || m.email.toLowerCase().includes(kw)
-    const statusOk = status === 'all' || m.status === status
-    const verifyOk = verify === 'all' || m.verify === verify
+  return allMembers.value.filter((m) => {
+    const keywordOk =
+      !kw || (m.name || '').toLowerCase().includes(kw) || (m.email || '').toLowerCase().includes(kw)
+    const statusOk = status === 'all' || m.state === status
+    const verifyOk = verify === 'all' || m.authenticationType === verify
     return keywordOk && statusOk && verifyOk
   })
 }
 
-/** PageTable @request: 목업 필터링 + 페이지네이션 (API 자리) */
 const onRequest = () => {
   const all = getFilteredMembers()
   const { page, rowsPerPage } = tableModel.value.pagination
@@ -156,36 +179,63 @@ const onRequest = () => {
   tableModel.value.rows = all.slice(start, start + rowsPerPage)
 }
 
-/** 상세 패널 */
+/** 상세 패널 — 목록엔 생년월일/성별/신고횟수/인증이메일이 없어 클릭 시 상세를 다시 조회 */
 const showDetail = ref(false)
 const selectedMember = ref(null)
 
-const openDetail = (row) => {
-  selectedMember.value = row
-  showDetail.value = true
+const openDetail = async (row) => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    const detail = await memberApi.getDetail(row.id)
+    selectedMember.value = { id: row.id, ...detail }
+    showDetail.value = true
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
-/** 처리 핸들러 — 패널 상태 즉시 갱신 후 목록 재조회 */
-const onSuspend = (reason) => {
-  selectedMember.value.status = 'suspended'
-  selectedMember.value.suspendReason = reason
-  onRequest()
+/** 정지 — 정지 해제 API가 없어 되돌릴 수 없음 (모달 사유는 백엔드가 안 받아 저장되지 않음) */
+const onSuspend = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await memberApi.suspend(selectedMember.value.id)
+    showDetail.value = false
+    await loadMembers()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
-const onUnsuspend = () => {
-  selectedMember.value.status = 'active'
-  onRequest()
+
+const onGrant = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await memberApi.setAuth(selectedMember.value.id, 'ADMIN')
+    showDetail.value = false
+    await loadMembers()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
-const onGrant = () => {
-  selectedMember.value.role = 'admin'
-  onRequest()
-}
-const onRevoke = () => {
-  selectedMember.value.role = 'user'
-  onRequest()
+const onRevoke = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await memberApi.setAuth(selectedMember.value.id, 'USER')
+    showDetail.value = false
+    await loadMembers()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
 onMounted(() => {
-  emitter.emit(COMMON.LOADING.HIDE)
-  tableRef.value.requestServerInteraction()
+  fetchMembers()
 })
 </script>
