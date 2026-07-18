@@ -88,7 +88,7 @@ const tableModel = ref({
       tooltip: false,
       format: (v, row) => (row.comeableDateNegotiable ? '협의 가능' : v ? dayjs(v).format('YYYY.MM.DD') : '-')
     },
-    { name: 'isDeleted', label: '노출상태', field: 'isDeleted', align: 'center', tooltip: false, format: (v) => badgeHtml(POST_STATUS_META[String(v)]) },
+    { name: 'deleted', label: '노출상태', field: 'deleted', align: 'center', tooltip: false, format: (v) => badgeHtml(POST_STATUS_META[String(v)]) },
     {
       name: 'createdAt',
       label: '등록일',
@@ -147,7 +147,7 @@ const getFilteredPosts = () => {
       (p.title || '').toLowerCase().includes(kw) ||
       (p.writer || '').toLowerCase().includes(kw) ||
       (p.region || '').toLowerCase().includes(kw)
-    const statusOk = status === 'all' || String(p.isDeleted) === status
+    const statusOk = status === 'all' || String(p.deleted) === status
     return keywordOk && statusOk
   })
 }
