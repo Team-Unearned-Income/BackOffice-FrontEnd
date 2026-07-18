@@ -38,7 +38,7 @@
 
     <q-separator />
     <!-- 3. 액션 — 백엔드가 soft delete만 지원 (비공개/재노출 API 없음) -->
-    <q-card-actions v-if="!post.isDeleted" align="left" class="q-px-lg q-py-md q-gutter-sm">
+    <q-card-actions v-if="!post.deleted" align="left" class="q-px-lg q-py-md q-gutter-sm">
       <q-btn
         label="삭제"
         class="bg-red-1 text-bold"
@@ -77,7 +77,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'remove'])
 
-const statusMeta = computed(() => POST_STATUS_META[String(props.post.isDeleted)])
+const statusMeta = computed(() => POST_STATUS_META[String(props.post.deleted)])
 
 /** thumbnailImage는 저장 파일명만 내려옴 — 전체 URL 여부가 확실치 않은 값만 <img>로 렌더 */
 const thumbnailUrl = computed(() =>
