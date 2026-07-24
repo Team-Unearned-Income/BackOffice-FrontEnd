@@ -95,12 +95,16 @@ onMounted(() => {
 /**
  * 백엔드(스프링 시큐리티) OAuth 로그인.
  * 백엔드가 카카오 인증 전체를 서버측(시크릿 포함)에서 처리 → accessToken 쿠키 + 세션 발급 →
- * `${client-url}/auth/success`(기본값 = 이 앱이 뜬 localhost:5173)로 복귀.
+ * `target_url`(쿼리파라미터로 전달한 이 앱의 `/auth/success`)로 복귀.
+ *
+ * BO와 소비자 앱이 백엔드를 공유해서, target_url 없이 로그인하면 백엔드 기본값(app.client-url,
+ * 소비자 앱 도메인)으로 리다이렉트된다 → 반드시 BO 자신의 origin을 target_url로 명시해야 한다.
  */
 const backendOauthUrl = (provider) => {
   const base =
     import.meta.env.VITE_BACKEND_URL || `${window.location.protocol}//${window.location.hostname}:8080`
-  return `${base}/oauth2/authorization/${provider}`
+  const targetUrl = `${window.location.origin}/auth/success`
+  return `${base}/oauth2/authorization/${provider}?target_url=${encodeURIComponent(targetUrl)}`
 }
 const loginWith = (provider) => {
   if (provider !== 'kakao') {
