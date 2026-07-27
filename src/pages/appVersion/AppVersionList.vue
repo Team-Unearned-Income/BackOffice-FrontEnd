@@ -2,186 +2,129 @@
   <div class="q-pa-lg">
     <div class="text-h5 text-bold q-mb-md">앱 버전 관리</div>
 
-    <!-- 탭 (전체 / iOS / Android) -->
-    <q-tabs
-      v-model="platformTab"
-      dense
-      align="left"
-      class="text-grey q-mb-sm"
-      active-color="black"
-      indicator-color="black"
-      narrow-indicator
-      @update:model-value="syncRows"
+    <q-card flat bordered class="q-pa-lg" style="max-width: 480px">
+      <template v-if="current">
+        <div class="text-caption text-grey-6">현재 앱 버전</div>
+        <div class="text-h4 text-bold q-mt-xs q-mb-md">{{ current.version }}</div>
+        <q-btn label="수정" color="dark" unelevated @click="openEdit" />
+      </template>
+      <template v-else>
+        <div class="text-body1 text-grey-7 q-mb-md">등록된 앱 버전 정보가 없습니다.</div>
+        <q-btn label="+ 버전 등록" color="primary" unelevated @click="openCreate" />
+      </template>
+    </q-card>
+
+    <div class="info-banner row items-start no-wrap q-mt-md">
+      <q-icon name="info" size="18px" class="q-mr-sm q-mt-xs" />
+      <span>
+현재 API는 플랫폼(iOS/Android) 구분, 최소 지원 버전, 강제 업데이트 여부 등을 지원하지 않으며 버전 문자열 1개만
+        관리됩니다. 저장 시 기존 버전은 대체됩니다.
+</span>
+    </div>
+
+    <!-- 등록/수정 폼 모달 -->
+    <BasicConfirm
+      v-model:show="showForm"
+      :title="isEdit ? '앱 버전 수정' : '앱 버전 등록'"
+      close-label="취소"
+      :draggable="false"
+      :style="{ width: '400px', maxWidth: '90vw' }"
     >
-      <q-tab name="all" label="전체" />
-      <q-tab name="ios" label="iOS" />
-      <q-tab name="android" label="Android" />
-    </q-tabs>
-    <q-separator class="q-mb-md" />
-
-    <!-- 목록 -->
-    <PageTable
-      ref="tableRef"
-      v-model="tableModel"
-      class="q-pa-md"
-      :row-key="'id'"
-      :table-style="{ minHeight: '35vh' }"
-      :on-top-options="false"
-    >
-      <!-- 필터 -->
-      <template #filter-section>
-        <div class="row justify-between items-center q-pb-md">
-          <div class="row q-col-gutter-sm items-center">
-            <div class="col-auto" style="min-width: 150px">
-              <q-select
-                v-model="platformFilter"
-                :options="PLATFORM_FILTER_OPTIONS"
-                dense
-                outlined
-                emit-value
-                map-options
-                @update:model-value="syncRows"
-              />
-            </div>
-            <div class="col-auto" style="min-width: 150px">
-              <q-select
-                v-model="updateTypeFilter"
-                :options="UPDATE_TYPE_FILTER_OPTIONS"
-                dense
-                outlined
-                emit-value
-                map-options
-                @update:model-value="syncRows"
-              />
-            </div>
-          </div>
-          <div class="col-auto">
-            <q-btn label="+ 버전 추가" color="primary" unelevated @click="openCreate" />
-          </div>
-        </div>
+      <template #content>
+        <div class="field-label">버전 <span class="text-red">*</span></div>
+        <q-input v-model="versionInput" dense outlined placeholder="예: 2.1.0" autofocus />
       </template>
-
-      <template #action="{ slotProps }">
-        <q-btn flat dense no-caps color="primary" label="수정" @click="openEdit(slotProps.row)" />
+      <template #button>
+        <q-btn
+          label="저장"
+          class="modal-btn-md text-bold"
+          color="dark"
+          unelevated
+          text-color="white"
+          :disable="!versionInput.trim()"
+          @click="onSave"
+        />
       </template>
-
-      <template #bottom>
-        <div class="info-banner row items-start no-wrap q-mx-md q-mb-md">
-          <q-icon name="info" size="18px" class="q-mr-sm q-mt-xs" />
-          <span>강제 업데이트 설정 시, 최소 지원 버전 미만 앱 실행 시 업데이트 강제 팝업이 노출됩니다.</span>
-        </div>
-      </template>
-    </PageTable>
-
-    <!-- 추가/수정 폼 모달 -->
-    <AppVersionFormModal v-model:show="showForm" :version-item="editingVersion" @save="onFormSave" />
+    </BasicConfirm>
   </div>
 </template>
 
 <script setup>
 import { inject, onMounted, ref } from 'vue'
+import { useQuasar } from 'quasar'
 import COMMON from '@/constants/commonConstatns'
-import PageTable from '@/components/table/PageTable.vue'
-import AppVersionFormModal from './AppVersionFormModal.vue'
-import {
-  PLATFORM_META,
-  UPDATE_TYPE_META,
-  LATEST_META,
-  PLATFORM_FILTER_OPTIONS,
-  UPDATE_TYPE_FILTER_OPTIONS,
-  badgeHtml
-} from './appVersionMeta'
+import BasicConfirm from '@/components/modal/BasicConfirm.vue'
+import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
+import { appVersionApi } from '@/service/bo/appVersion'
 
 const emitter = inject('emitter')
+const $q = useQuasar()
 
-/** 플랫폼별 버전 목록 — 백엔드에 대응 API가 없어 화면 내에서만 관리(목업). 더미 초기 데이터는 제거함 */
-const versions = ref([])
+/** 백엔드가 { id, version } 단건만 관리 — 목록/플랫폼 구분 없음 */
+const current = ref(null)
 
-const platformTab = ref('all')
-const platformFilter = ref('all')
-const updateTypeFilter = ref('all')
-
-/** 플랫폼별 최신 출시일 버전에 '최신' 뱃지 부여 */
-const latestIdsByPlatform = () => {
-  const latest = {}
-  versions.value.forEach((v) => {
-    const cur = latest[v.platform]
-    if (!cur || v.releaseDate > cur.releaseDate) latest[v.platform] = v
-  })
-  return new Set(Object.values(latest).map((v) => v.id))
+const showError = (e) => {
+  const message = e?.error?.message || e?.message || '처리 중 오류가 발생했습니다.'
+  $q.dialog({ component: AlarmDialog, componentProps: { title: '오류', message } })
 }
 
-const tableRef = ref(null)
-const tableModel = ref({
-  filter: {},
-  search: {},
-  selected: [],
-  filterAndSearchData: {},
-  header: [
-    {
-      name: 'version',
-      label: '버전',
-      field: 'version',
-      align: 'left',
-      tooltip: false,
-      format: (v, row) => (row.isLatest ? `${v} ${badgeHtml(LATEST_META)}` : v)
-    },
-    { name: 'platform', label: '플랫폼', field: 'platform', align: 'center', tooltip: false, format: (v) => badgeHtml(PLATFORM_META[v]) },
-    { name: 'updateType', label: '업데이트 유형', field: 'updateType', align: 'center', tooltip: false, format: (v) => badgeHtml(UPDATE_TYPE_META[v]) },
-    { name: 'minSupportVersion', label: '최소 지원', field: 'minSupportVersion', align: 'center', tooltip: false },
-    { name: 'releaseDate', label: '출시일', field: 'releaseDate', align: 'center', tooltip: false, format: (v) => v.replace(/-/g, '.') },
-    { name: 'action', label: '액션', field: 'id', align: 'center', tooltip: false, slot: 'action' }
-  ],
-  rows: [],
-  pagination: { page: 1, rowsPerPage: 15, rowsNumber: 0 }
-})
-
-const syncRows = () => {
-  const latestIds = latestIdsByPlatform()
-  const filtered = versions.value
-    .filter((v) => {
-      const platformOk =
-        (platformTab.value === 'all' || v.platform === platformTab.value) &&
-        (platformFilter.value === 'all' || v.platform === platformFilter.value)
-      const typeOk = updateTypeFilter.value === 'all' || v.updateType === updateTypeFilter.value
-      return platformOk && typeOk
-    })
-    .map((v) => ({ ...v, isLatest: latestIds.has(v.id) }))
-    .sort((a, b) => (a.releaseDate < b.releaseDate ? 1 : -1))
-  tableModel.value.rows = filtered
-  tableModel.value.pagination.rowsNumber = filtered.length
+const fetchCurrent = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    current.value = await appVersionApi.getCurrent()
+  } catch {
+    current.value = null
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
 }
 
-/** 추가/수정 폼 모달 (버전은 삭제 불가 — 이력 보존, 수정만 가능) */
 const showForm = ref(false)
-const editingVersion = ref(null)
+const isEdit = ref(false)
+const versionInput = ref('')
 
 const openCreate = () => {
-  editingVersion.value = null
+  isEdit.value = false
+  versionInput.value = ''
   showForm.value = true
 }
-const openEdit = (row) => {
-  editingVersion.value = row
+const openEdit = () => {
+  isEdit.value = true
+  versionInput.value = current.value?.version ?? ''
   showForm.value = true
 }
-const onFormSave = (data) => {
-  if (editingVersion.value) {
-    const target = versions.value.find((v) => v.id === editingVersion.value.id)
-    if (target) Object.assign(target, data)
-  } else {
-    const newId = Math.max(0, ...versions.value.map((v) => v.id)) + 1
-    versions.value.push({ id: newId, ...data })
+
+const onSave = async () => {
+  const version = versionInput.value.trim()
+  if (!version) return
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    if (isEdit.value && current.value) {
+      await appVersionApi.modify({ id: current.value.id, version })
+    } else {
+      await appVersionApi.save({ version })
+    }
+    showForm.value = false
+    await fetchCurrent()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
   }
-  syncRows()
 }
 
 onMounted(() => {
-  emitter.emit(COMMON.LOADING.HIDE)
-  syncRows()
+  fetchCurrent()
 })
 </script>
 
 <style scoped>
+.field-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 0.35rem;
+}
 .info-banner {
   background: #ede7f6;
   border: 1px solid #d1c4e9;
@@ -190,5 +133,6 @@ onMounted(() => {
   font-size: 0.82rem;
   line-height: 1.4;
   padding: 0.6rem 0.85rem;
+  max-width: 480px;
 }
 </style>
