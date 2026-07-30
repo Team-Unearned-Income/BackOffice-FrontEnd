@@ -27,22 +27,6 @@
       <div class="field-label">도메인 <span class="text-red">*</span></div>
       <q-input v-model="domain" dense outlined placeholder="예: suwon.ac.kr" class="q-mb-xs" />
       <div class="text-caption text-grey-6 q-mb-md">@ 이후 도메인만 입력 (예: suwon.ac.kr)</div>
-
-      <!-- 상태 -->
-      <div class="field-label">상태 <span class="text-red">*</span></div>
-      <q-select
-        v-model="status"
-        :options="STATUS_SELECT_OPTIONS"
-        dense
-        outlined
-        emit-value
-        map-options
-        class="q-mb-md"
-      />
-
-      <!-- 메모 -->
-      <div class="field-label">메모</div>
-      <q-input v-model="memo" dense outlined placeholder="내부 메모 (선택)" />
     </template>
 
     <template #button>
@@ -62,7 +46,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import BasicConfirm from '@/components/modal/BasicConfirm.vue'
-import { TYPE_SELECT_OPTIONS, STATUS_SELECT_OPTIONS } from './mailDomainMeta'
+import { TYPE_SELECT_OPTIONS } from './mailDomainMeta'
 
 const show = defineModel('show', { type: Boolean, default: false })
 
@@ -78,20 +62,16 @@ const emit = defineEmits(['save'])
 
 const isEdit = computed(() => !!props.domainItem)
 
-const type = ref('school')
+const type = ref('STUDENT')
 const name = ref('')
 const domain = ref('')
-const status = ref('active')
-const memo = ref('')
 
 /** 모달이 열릴 때 props.domainItem 기준으로 폼 초기화 */
 const initForm = () => {
   const d = props.domainItem
-  type.value = d?.type ?? 'school'
+  type.value = d?.type ?? 'STUDENT'
   name.value = d?.name ?? ''
   domain.value = d?.domain ?? ''
-  status.value = d?.status ?? 'active'
-  memo.value = d?.memo ?? ''
 }
 watch(show, (v) => {
   if (v) initForm()
@@ -104,9 +84,7 @@ const onSave = () => {
   emit('save', {
     type: type.value,
     name: name.value.trim(),
-    domain: domain.value.trim(),
-    status: status.value,
-    memo: memo.value.trim()
+    domain: domain.value.trim()
   })
   show.value = false
 }
