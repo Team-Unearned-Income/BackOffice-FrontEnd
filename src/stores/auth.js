@@ -1,12 +1,16 @@
 import { jwtDecode } from 'jwt-decode'
 import { defineStore } from 'pinia'
+import { meApi } from '@/service/bo/me'
 
 const STORE_KEY = 'auth'
 
 const authEmpty = {
   accessToken: '',
   userName: '',
-  loggedIn: false
+  loggedIn: false,
+  // ADMIN role 확인 여부. accessToken이 httpOnly 쿠키인 경우 JWT를 디코드할 수 없어
+  // `/bo/me` 응답으로만 판단 가능하므로 null(미확인)/true/false 로 캐싱한다.
+  isAdmin: null
 }
 
 export const useAuthStore = defineStore(STORE_KEY, {
@@ -79,6 +83,22 @@ export const useAuthStore = defineStore(STORE_KEY, {
       this.$patch({ ...authEmpty })
     },
 
+    // 로그인 계정의 실제 role을 `/bo/me`로 확인해 isAdmin에 캐싱한다.
+    // 인증 자체가 무효한 경우(401)는 axios 인터셉터(errorResponseInterceptor)가 이미
+    // 로그아웃 처리 + 로그인 페이지 이동을 담당하므로, 여기서는 "로그인은 유효하지만
+    // ADMIN이 아님(403 ACCESS_DENIED)" 케이스만 isAdmin=false로 캐싱해 로그인 상태는 유지한다.
+    async checkRole() {
+      try {
+        const me = await meApi.getMe()
+        const isAdmin = me?.role === 'ADMIN'
+        this.$patch({ isAdmin })
+        return isAdmin
+      } catch (err) {
+        this.$patch({ isAdmin: false })
+        return false
+      }
+    },
+
     // accessToken이 실제로 있을 때만 Authorization 헤더를 실어보낸다.
     // 쿠키 로그인(loggedIn=true, accessToken='')인 경우 빈 "Bearer " 헤더를 보내면
     // 백엔드가 쿠키를 확인하기도 전에 그 헤더만 보고 TOKEN_INVALID로 401을 내려버리므로
@@ -95,5 +115,10 @@ export const useAuthStore = defineStore(STORE_KEY, {
       this.$patch(authEmpty)
     }
   },
-  persist: true
+  // isAdmin은 persist 대상에서 제외한다. localStorage에 남아있으면 devtools로 값을 조작해
+  // 라우터 가드(ADMIN 아닌 계정의 dashboard 진입 차단)를 우회할 수 있기 때문에,
+  // 새로고침/재접속 시엔 항상 null로 시작해 `/bo/me`로 다시 검증하게 한다.
+  persist: {
+    paths: ['accessToken', 'userName', 'loggedIn']
+  }
 })

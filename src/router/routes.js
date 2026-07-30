@@ -43,8 +43,13 @@ const routes = [
     ]
   },
   {
+    path: '/forbidden',
+    name: 'Forbidden',
+    component: () => import('@/pages/error/Forbidden.vue')
+  },
+  {
     path: '/:pathMatch(.*)*',
-    component: import('@/pages/error/NotFound.vue')
+    component: () => import('@/pages/error/NotFound.vue')
   }
 ]
 
