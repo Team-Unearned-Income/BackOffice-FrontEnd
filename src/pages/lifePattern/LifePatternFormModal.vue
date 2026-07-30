@@ -27,6 +27,30 @@
       <div class="field-label">우선순위 <span class="text-grey-6 text-caption">— 낮을수록 앞에 노출</span></div>
       <q-input v-model.number="sort" type="number" dense outlined min="1" class="q-mb-md" />
 
+      <!-- 생활패턴 설명 -->
+      <div class="field-label">생활패턴 설명</div>
+      <q-input
+        v-model="lifePatternDescription"
+        type="textarea"
+        dense
+        outlined
+        autogrow
+        placeholder="생활패턴 항목에 대한 설명"
+        class="q-mb-md"
+      />
+
+      <!-- 선호조건 설명 -->
+      <div class="field-label">선호조건 설명</div>
+      <q-input
+        v-model="preferenceDescription"
+        type="textarea"
+        dense
+        outlined
+        autogrow
+        placeholder="선호조건에 대한 설명"
+        class="q-mb-md"
+      />
+
       <!-- 선택지/값 목록 -->
       <div class="field-label">선택지 <span class="text-grey-6 text-caption">— 최소 1개</span></div>
       <div v-for="(d, i) in details" :key="i" class="row items-center no-wrap q-gutter-sm q-mb-sm">
@@ -81,6 +105,8 @@ const isEdit = computed(() => !!props.pattern)
 const type = ref('SCALE')
 const name = ref('')
 const sort = ref(1)
+const lifePatternDescription = ref('')
+const preferenceDescription = ref('')
 const details = ref([{ values: '', description: '' }])
 
 /** 모달이 열릴 때 props.pattern 기준으로 폼 초기화 */
@@ -89,6 +115,8 @@ const initForm = () => {
   type.value = p?.type ?? 'SCALE'
   name.value = p?.name ?? ''
   sort.value = p?.sort ?? 1
+  lifePatternDescription.value = p?.lifePatternDescription ?? ''
+  preferenceDescription.value = p?.preferenceDescription ?? ''
   details.value = p?.details?.length
     ? p.details.map((d) => ({ values: d.values ?? '', description: d.description ?? '' }))
     : [{ values: '', description: '' }]
@@ -113,6 +141,8 @@ const onSave = () => {
     name: name.value.trim(),
     type: type.value,
     sort: Number(sort.value) || 1,
+    lifePatternDescription: lifePatternDescription.value.trim(),
+    preferenceDescription: preferenceDescription.value.trim(),
     details: details.value
       .map((d) => ({ values: d.values.trim(), description: d.description.trim() }))
       .filter((d) => d.values)
