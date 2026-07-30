@@ -5,11 +5,12 @@
         <q-icon name="menu" />
       </q-btn>
       <div
-        class="text-h5 text-bold text-white q-mx-sm cursor-pointer"
+        class="row items-center text-h5 text-bold text-white q-mx-sm cursor-pointer"
         style="flex-shrink: 0; letter-spacing: 1px"
         @click="$router.push({ name: 'Home' })"
       >
-        KNOCK-IN
+        <img src="/favicon.ico" alt="" class="q-mr-sm" style="width: 28px; height: 28px; object-fit: contain" />
+        KNOCKIN
       </div>
 
       <div class="row items-center justify-end" style="flex-grow: 1">
