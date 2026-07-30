@@ -22,6 +22,7 @@ const lnbMenu = [
   { key: 'mailDomain', menuName: '메일 도메인', icon: 'alternate_email', url: '/mail-domain' },
   { key: 'appVersion', menuName: '앱 버전', icon: 'system_update', url: '/app-version' },
   { key: 'roomType', menuName: '방 유형', icon: 'meeting_room', url: '/room-type' },
+  { key: 'roomAddOption', menuName: '방 추가 옵션', icon: 'add_business', url: '/room-add-option' },
   { key: 'terms', menuName: '약관관리', icon: 'gavel', url: '/terms' }
 ]
 
