@@ -52,20 +52,32 @@
 
       <template #action="{ slotProps }">
         <q-btn flat dense no-caps color="primary" label="수정" @click="openEdit(slotProps.row)" />
+        <q-btn flat dense no-caps color="red" label="삭제" @click="openDelete(slotProps.row)" />
       </template>
     </PageTable>
 
     <!-- 추가/수정 폼 모달 -->
     <MailDomainFormModal v-model:show="showForm" :domain-item="editingDomain" @save="onFormSave" />
+
+    <!-- 삭제 확인 모달 -->
+    <ProcessConfirmModal
+      v-model:show="showDelete"
+      title="메일 도메인 삭제"
+      :message="deleteMessage"
+      confirm-label="삭제"
+      confirm-color="red"
+      @confirm="onDeleteConfirm"
+    />
   </div>
 </template>
 
 <script setup>
-import { inject, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import { useQuasar } from 'quasar'
 import COMMON from '@/constants/commonConstatns'
 import PageTable from '@/components/table/PageTable.vue'
 import TableSearch from '@/components/table/TableSearch.vue'
+import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
 import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
 import MailDomainFormModal from './MailDomainFormModal.vue'
 import { mailDomainApi } from '@/service/bo/mailDomain'
@@ -165,6 +177,28 @@ const onFormSave = async (data) => {
     } else {
       await mailDomainApi.save(data)
     }
+    await loadDomains()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
+}
+
+/** 삭제 확인 모달 */
+const showDelete = ref(false)
+const deleteTarget = ref(null)
+const deleteMessage = computed(() =>
+  deleteTarget.value ? `"${deleteTarget.value.name}" 메일 도메인을 삭제하시겠어요?` : ''
+)
+const openDelete = (row) => {
+  deleteTarget.value = row
+  showDelete.value = true
+}
+const onDeleteConfirm = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await mailDomainApi.remove(deleteTarget.value.id)
     await loadDomains()
   } catch (e) {
     showError(e)
