@@ -7,6 +7,7 @@
  * 삭제 후에도 목록에 남아있을 수 있음(백엔드 이슈, roomType과 동일한 패턴) — 확인 필요.
  */
 import api from '@/common/library/axios'
+import { toMultipart } from './common/toMultipart'
 
 const BASE = '/bo/room-add-options'
 
@@ -20,14 +21,23 @@ export const roomAddOptionApi = {
    */
   getList: (params) => api.get(BASE, { params }).then(unwrap),
 
-  /** 방 추가 옵션 상세 조회 → { id, name } */
+  /** 방 추가 옵션 상세 조회 → { id, name, image } */
   getDetail: (id) => api.get(`${BASE}/${id}`).then(unwrap),
 
-  /** 방 추가 옵션 저장 — body { name } → { updatedAt } */
-  save: (body) => api.post(BASE, body).then(unwrap),
+  /**
+   * 방 추가 옵션 저장 — multipart(request: { name }, file?: 이미지) → { updatedAt }
+   * @param {{ name: string }} body
+   * @param {File|null} [image]
+   */
+  save: (body, image) => api.post(BASE, toMultipart(body, image)).then(unwrap),
 
-  /** 방 추가 옵션 수정 — body { name } → { updatedAt } */
-  modify: (id, body) => api.put(`${BASE}/${id}`, body).then(unwrap),
+  /**
+   * 방 추가 옵션 수정 — multipart(request: { name }, file?: 이미지) → { updatedAt }
+   * 이미지 미첨부 시 기존 이미지가 유지된다(교체만 가능, 단독 삭제 불가 — 백엔드 정책).
+   * @param {{ name: string }} body
+   * @param {File|null} [image]
+   */
+  modify: (id, body, image) => api.put(`${BASE}/${id}`, toMultipart(body, image)).then(unwrap),
 
   /** 방 추가 옵션 삭제 (soft delete) → { updatedAt } */
   remove: (id) => api.delete(`${BASE}/${id}`).then(unwrap)

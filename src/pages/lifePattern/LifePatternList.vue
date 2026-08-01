@@ -161,7 +161,8 @@ const openEdit = async (row) => {
     editingPattern.value = {
       ...row,
       lifePatternDescription: detail?.lifePatternDescription ?? '',
-      preferenceDescription: detail?.preferenceDescription ?? ''
+      preferenceDescription: detail?.preferenceDescription ?? '',
+      image: detail?.image ?? null
     }
   } catch (e) {
     showError(e)
@@ -171,11 +172,11 @@ const openEdit = async (row) => {
   }
   showForm.value = true
 }
-const onFormSave = async (data) => {
+const onFormSave = async (data, image) => {
   emitter.emit(COMMON.LOADING.SHOW)
   try {
-    if (editingPattern.value) await lifePatternApi.modify(editingPattern.value.id, data)
-    else await lifePatternApi.save(data)
+    if (editingPattern.value) await lifePatternApi.modify(editingPattern.value.id, data, image)
+    else await lifePatternApi.save(data, image)
     showForm.value = false
     await loadPatterns()
   } catch (e) {

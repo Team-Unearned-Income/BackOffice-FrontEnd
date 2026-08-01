@@ -50,6 +50,7 @@
           placeholder="예: 원룸, 오피스텔, 아파트"
           class="q-mb-sm"
         />
+        <ImageInput v-model="form.image" :preview-url="editingImageUrl" label="이미지" class="q-mb-sm" />
         <div class="row justify-end q-gutter-sm q-mt-md">
           <q-btn label="취소" color="grey-7" outline @click="closeForm" />
           <q-btn
@@ -83,6 +84,7 @@ import PageTable from '@/components/table/PageTable.vue'
 import TableSearch from '@/components/table/TableSearch.vue'
 import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
 import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
+import ImageInput from '@/components/input/ImageInput.vue'
 import COMMON from '@/constants/commonConstatns'
 import { roomTypeApi } from '@/service/bo/roomType'
 
@@ -146,11 +148,13 @@ const clearSearch = () => {
 /** 작성/수정 폼 */
 const showForm = ref(false)
 const editingId = ref(null)
-const form = ref({ name: '' })
+const editingImageUrl = ref(null)
+const form = ref({ name: '', image: null })
 
 const resetForm = () => {
-  form.value = { name: '' }
+  form.value = { name: '', image: null }
   editingId.value = null
+  editingImageUrl.value = null
 }
 
 const openCreateForm = () => {
@@ -163,9 +167,20 @@ const closeForm = () => {
   resetForm()
 }
 
-const editRoomType = (row) => {
+const editRoomType = async (row) => {
   editingId.value = row.id
-  form.value = { name: row.name }
+  form.value = { name: row.name, image: null }
+  // 목록 응답엔 image가 없어서 상세 조회로 보충한다.
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    const detail = await roomTypeApi.getDetail(row.id)
+    editingImageUrl.value = detail?.image ?? null
+  } catch (e) {
+    showError(e)
+    editingImageUrl.value = null
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
   showForm.value = true
 }
 
@@ -196,8 +211,8 @@ const submitRoomType = async () => {
   const body = { name: form.value.name.trim() }
   emitter.emit(COMMON.LOADING.SHOW)
   try {
-    if (editingId.value) await roomTypeApi.modify(editingId.value, body)
-    else await roomTypeApi.save(body)
+    if (editingId.value) await roomTypeApi.modify(editingId.value, body, form.value.image)
+    else await roomTypeApi.save(body, form.value.image)
     closeForm()
     await loadRoomTypes()
   } catch (e) {

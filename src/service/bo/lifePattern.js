@@ -6,6 +6,7 @@
  * 삭제는 soft delete(isDeleted=true) — 유저 응답 데이터는 보존되고 앱에서만 비노출.
  */
 import api from '@/common/library/axios'
+import { toMultipart } from './common/toMultipart'
 
 const BASE = '/bo/lifestyle-patterns'
 
@@ -19,14 +20,23 @@ export const lifePatternApi = {
    */
   getList: (params) => api.get(BASE, { params }).then(unwrap),
 
-  /** 생활패턴 상세 조회 → { id, name, type, details: [{ values, description }] } */
+  /** 생활패턴 상세 조회 → { id, name, image, type, details: [{ values, description }] } */
   getDetail: (id) => api.get(`${BASE}/${id}`).then(unwrap),
 
-  /** 생활패턴 저장 — body { name, type, sort, details } → { updatedAt } */
-  save: (body) => api.post(BASE, body).then(unwrap),
+  /**
+   * 생활패턴 저장 — multipart(request: { name, type, sort, details }, file?: 이미지) → { updatedAt }
+   * @param {object} body
+   * @param {File|null} [image]
+   */
+  save: (body, image) => api.post(BASE, toMultipart(body, image)).then(unwrap),
 
-  /** 생활패턴 수정 — body { name, type, sort, details } → { updatedAt } */
-  modify: (id, body) => api.put(`${BASE}/${id}`, body).then(unwrap),
+  /**
+   * 생활패턴 수정 — multipart(request: { name, type, sort, details }, file?: 이미지) → { updatedAt }
+   * 이미지 미첨부 시 기존 이미지가 유지된다(교체만 가능, 단독 삭제 불가 — 백엔드 정책).
+   * @param {object} body
+   * @param {File|null} [image]
+   */
+  modify: (id, body, image) => api.put(`${BASE}/${id}`, toMultipart(body, image)).then(unwrap),
 
   /** 생활패턴 삭제 (soft delete) → { updatedAt } */
   remove: (id) => api.delete(`${BASE}/${id}`).then(unwrap)

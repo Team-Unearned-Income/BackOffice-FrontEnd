@@ -23,6 +23,9 @@
       <div class="field-label">항목명</div>
       <q-input v-model="name" dense outlined placeholder="예: 취침 시간" class="q-mb-md" />
 
+      <!-- 이미지 -->
+      <ImageInput v-model="image" :preview-url="props.pattern?.image ?? null" label="이미지" class="q-mb-md" />
+
       <!-- 우선순위 -->
       <div class="field-label">우선순위 <span class="text-grey-6 text-caption">— 낮을수록 앞에 노출</span></div>
       <q-input v-model.number="sort" type="number" dense outlined min="1" class="q-mb-md" />
@@ -86,6 +89,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import BasicConfirm from '@/components/modal/BasicConfirm.vue'
+import ImageInput from '@/components/input/ImageInput.vue'
 import { TYPE_SELECT_OPTIONS } from './lifePatternMeta'
 
 const show = defineModel('show', { type: Boolean, default: false })
@@ -104,6 +108,7 @@ const isEdit = computed(() => !!props.pattern)
 
 const type = ref('SCALE')
 const name = ref('')
+const image = ref(null)
 const sort = ref(1)
 const lifePatternDescription = ref('')
 const preferenceDescription = ref('')
@@ -114,6 +119,7 @@ const initForm = () => {
   const p = props.pattern
   type.value = p?.type ?? 'SCALE'
   name.value = p?.name ?? ''
+  image.value = null
   sort.value = p?.sort ?? 1
   lifePatternDescription.value = p?.lifePatternDescription ?? ''
   preferenceDescription.value = p?.preferenceDescription ?? ''
@@ -137,16 +143,20 @@ const isValid = computed(() => {
 
 const onSave = () => {
   if (!isValid.value) return
-  emit('save', {
-    name: name.value.trim(),
-    type: type.value,
-    sort: Number(sort.value) || 1,
-    lifePatternDescription: lifePatternDescription.value.trim(),
-    preferenceDescription: preferenceDescription.value.trim(),
-    details: details.value
-      .map((d) => ({ values: d.values.trim(), description: d.description.trim() }))
-      .filter((d) => d.values)
-  })
+  emit(
+    'save',
+    {
+      name: name.value.trim(),
+      type: type.value,
+      sort: Number(sort.value) || 1,
+      lifePatternDescription: lifePatternDescription.value.trim(),
+      preferenceDescription: preferenceDescription.value.trim(),
+      details: details.value
+        .map((d) => ({ values: d.values.trim(), description: d.description.trim() }))
+        .filter((d) => d.values)
+    },
+    image.value
+  )
   show.value = false
 }
 </script>
