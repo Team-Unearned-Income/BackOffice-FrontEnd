@@ -40,7 +40,7 @@ export const setRouterBeforeEach = () => {
         next({ name: 'Forbidden' })
         return
       }
-      // isAdmin이 아직 미확인(null)이면 `/bo/me`로 한 번 확인 후 캐싱한다.
+      // isAdmin이 아직 미확인(null)이면 `/users/me/account`로 한 번 확인 후 캐싱한다.
       if (authStore.isAdmin !== true) {
         const isAdmin = await authStore.checkRole()
         if (!isAdmin) {
