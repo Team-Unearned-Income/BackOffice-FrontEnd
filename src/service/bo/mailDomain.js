@@ -6,7 +6,8 @@
  * ⚠ 백엔드 엔티티(`AuthEmail`)에 domain/name/type 세 필드만 있고, 목업 화면에 있던
  * 회원수·상태(활성/비활성)·등록일·메모·삭제는 백엔드에 없음 — UI에서도 뺐다.
  * - type enum 값은 STUDENT/COMPANY (school/company 아님)
- * - PUT(modify)는 컨트롤러에 @RequestBody가 없어 JSON 바디가 아니라 쿼리파라미터로 바인딩됨
+ * - 도메인 중복(등록/수정)은 백엔드가 409(AUTH_EMAIL_DUPLICATE_DOMAIN)로 검증한다.
+ * - BE 0952e6e 이후 PUT도 @RequestBody로 JSON 바디를 받도록 수정됨(과거엔 쿼리파라미터 바인딩이었음).
  */
 import api from '@/common/library/axios'
 
@@ -21,8 +22,8 @@ export const mailDomainApi = {
   /** 메일 도메인 저장 — body { domain, name, type } → { updatedAt } */
   save: (body) => api.post(BASE, body).then(unwrap),
 
-  /** 메일 도메인 수정 — 쿼리파라미터 { id, domain, name, type } → { updatedAt } */
-  modify: (params) => api.put(BASE, null, { params }).then(unwrap)
+  /** 메일 도메인 수정 — body { id, domain, name, type } → { updatedAt } */
+  modify: (body) => api.put(BASE, body).then(unwrap)
 }
 
 export default mailDomainApi
