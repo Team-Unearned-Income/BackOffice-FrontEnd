@@ -16,3 +16,7 @@
   - `PageTable`에는 `class="q-pa-md"`를 주어 내부(필터 컨테이너 + 테이블) 패딩을 확보한다.
 - **처리 확인 모달은 공통 컴포넌트 `ProcessConfirmModal`(`src/components/modal/ProcessConfirmModal.vue`)을 사용한다.** 정지/비공개/삭제/반려/권한 부여 등 처리 확인 모달을 화면별로 따로 만들지 말고, `$q.dialog({ component: ProcessConfirmModal, componentProps: {...} })`로 호출한다. props: `title`, `message`, `requireReason`(사유 필수 textarea), `reasonLabel`, `warning`(앰버 경고 박스), `confirmLabel`, `confirmColor`(`'red'`/`'dark'`/`'amber'`). 간단 확인은 `@/components/dialog/AlarmDialog.vue`를 사용한다.
 - **페이지 루트 컨테이너는 `q-pa-lg` 패딩을 사용한다.** (목록/탭 화면 등 모든 페이지 최상위 `div`)
+
+## 백엔드(11th-1team-BE) 저장소 작업 규칙
+
+- 백엔드 소스는 참고/진단(코드 읽기, 로그 확인, 로컬 실행 테스트) 목적으로만 건드린다. 코드 수정이 꼭 필요하면 파일만 고쳐두고 **git commit은 절대 하지 않는다.** (BE는 별도 팀이 관리하며, 커밋 여부는 그쪽에서 판단한다.)

@@ -1,6 +1,6 @@
 <template>
   <div class="q-pa-lg">
-    <div class="text-h5 text-bold q-mb-md">방 유형 관리</div>
+    <div class="text-h5 text-bold q-mb-md">방 추가 옵션 관리</div>
 
     <!-- 목록 -->
     <PageTable
@@ -28,13 +28,13 @@
             </div>
           </div>
           <div class="col-auto">
-            <q-btn label="+ 방 유형 추가" color="dark" outline @click="openCreateForm" />
+            <q-btn label="+ 방 추가 옵션 추가" color="dark" outline @click="openCreateForm" />
           </div>
         </div>
       </template>
 
       <template #action="{ slotProps }">
-        <q-btn flat dense no-caps color="primary" label="수정" @click="editRoomType(slotProps.row)" />
+        <q-btn flat dense no-caps color="primary" label="수정" @click="editRoomAddOption(slotProps.row)" />
         <q-btn flat dense no-caps color="red" label="삭제" @click="openDelete(slotProps.row)" />
       </template>
     </PageTable>
@@ -42,12 +42,12 @@
     <!-- 추가/수정 폼 -->
     <q-slide-transition>
       <q-card v-if="showForm" flat bordered class="q-pa-md q-mt-md">
-        <div class="text-subtitle1 text-bold q-mb-md">{{ editingId ? '방 유형 수정' : '방 유형 추가' }}</div>
+        <div class="text-subtitle1 text-bold q-mb-md">{{ editingId ? '방 추가 옵션 수정' : '방 추가 옵션 추가' }}</div>
         <q-input
           v-model="form.name"
           dense
           outlined
-          placeholder="예: 원룸, 오피스텔, 아파트"
+          placeholder="예: 주차 가능, 반려동물 가능, 엘리베이터"
           class="q-mb-sm"
         />
         <ImageInput v-model="form.image" :preview-url="editingImageUrl" label="이미지" class="q-mb-sm" />
@@ -59,7 +59,7 @@
             unelevated
             text-color="white"
             :disable="!form.name.trim()"
-            @click="submitRoomType"
+            @click="submitRoomAddOption"
           />
         </div>
       </q-card>
@@ -68,7 +68,7 @@
     <!-- 삭제 확인 모달 -->
     <ProcessConfirmModal
       v-model:show="showDelete"
-      title="방 유형 삭제"
+      title="방 추가 옵션 삭제"
       :message="deleteMessage"
       confirm-label="삭제"
       confirm-color="red"
@@ -86,7 +86,7 @@ import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
 import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
 import ImageInput from '@/components/input/ImageInput.vue'
 import COMMON from '@/constants/commonConstatns'
-import { roomTypeApi } from '@/service/bo/roomType'
+import { roomAddOptionApi } from '@/service/bo/roomAddOption'
 
 const emitter = inject('emitter')
 const $q = useQuasar()
@@ -96,7 +96,7 @@ const showError = (e) => {
   $q.dialog({ component: AlarmDialog, componentProps: { title: '오류', message } })
 }
 
-const allRoomTypes = ref([])
+const allRoomAddOptions = ref([])
 const searchKeyword = ref('')
 
 const tableRef = ref(null)
@@ -114,16 +114,16 @@ const tableModel = ref({
   pagination: { page: 1, rowsPerPage: 15, rowsNumber: 0 }
 })
 
-const loadRoomTypes = async () => {
-  const res = await roomTypeApi.getList({ page: 0, size: 100 })
-  allRoomTypes.value = res?.roomType ?? []
+const loadRoomAddOptions = async () => {
+  const res = await roomAddOptionApi.getList({ page: 0, size: 100 })
+  allRoomAddOptions.value = res?.roomAddOptionItem ?? []
   syncRows()
 }
 
-const fetchRoomTypes = async () => {
+const fetchRoomAddOptions = async () => {
   emitter.emit(COMMON.LOADING.SHOW)
   try {
-    await loadRoomTypes()
+    await loadRoomAddOptions()
   } catch (e) {
     showError(e)
   } finally {
@@ -134,8 +134,8 @@ const fetchRoomTypes = async () => {
 const syncRows = () => {
   const kw = searchKeyword.value.trim().toLowerCase()
   const filtered = kw
-    ? allRoomTypes.value.filter((r) => (r.name || '').toLowerCase().includes(kw))
-    : allRoomTypes.value
+    ? allRoomAddOptions.value.filter((r) => (r.name || '').toLowerCase().includes(kw))
+    : allRoomAddOptions.value
   tableModel.value.rows = filtered
   tableModel.value.pagination.rowsNumber = filtered.length
 }
@@ -167,13 +167,13 @@ const closeForm = () => {
   resetForm()
 }
 
-const editRoomType = async (row) => {
+const editRoomAddOption = async (row) => {
   editingId.value = row.id
   form.value = { name: row.name, image: null }
   // 목록 응답엔 image가 없어서 상세 조회로 보충한다.
   emitter.emit(COMMON.LOADING.SHOW)
   try {
-    const detail = await roomTypeApi.getDetail(row.id)
+    const detail = await roomAddOptionApi.getDetail(row.id)
     editingImageUrl.value = detail?.image ?? null
   } catch (e) {
     showError(e)
@@ -188,7 +188,7 @@ const editRoomType = async (row) => {
 const showDelete = ref(false)
 const deleteTarget = ref(null)
 const deleteMessage = computed(() =>
-  deleteTarget.value ? `"${deleteTarget.value.name}" 방 유형을 삭제하시겠어요?` : ''
+  deleteTarget.value ? `"${deleteTarget.value.name}" 방 추가 옵션을 삭제하시겠어요?` : ''
 )
 const openDelete = (row) => {
   deleteTarget.value = row
@@ -197,8 +197,8 @@ const openDelete = (row) => {
 const onDeleteConfirm = async () => {
   emitter.emit(COMMON.LOADING.SHOW)
   try {
-    await roomTypeApi.remove(deleteTarget.value.id)
-    await loadRoomTypes()
+    await roomAddOptionApi.remove(deleteTarget.value.id)
+    await loadRoomAddOptions()
   } catch (e) {
     showError(e)
   } finally {
@@ -206,15 +206,15 @@ const onDeleteConfirm = async () => {
   }
 }
 
-const submitRoomType = async () => {
+const submitRoomAddOption = async () => {
   if (!form.value.name.trim()) return
   const body = { name: form.value.name.trim() }
   emitter.emit(COMMON.LOADING.SHOW)
   try {
-    if (editingId.value) await roomTypeApi.modify(editingId.value, body, form.value.image)
-    else await roomTypeApi.save(body, form.value.image)
+    if (editingId.value) await roomAddOptionApi.modify(editingId.value, body, form.value.image)
+    else await roomAddOptionApi.save(body, form.value.image)
     closeForm()
-    await loadRoomTypes()
+    await loadRoomAddOptions()
   } catch (e) {
     showError(e)
   } finally {
@@ -223,6 +223,6 @@ const submitRoomType = async () => {
 }
 
 onMounted(() => {
-  fetchRoomTypes()
+  fetchRoomAddOptions()
 })
 </script>

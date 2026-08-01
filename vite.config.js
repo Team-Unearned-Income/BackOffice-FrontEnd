@@ -30,6 +30,11 @@ export default defineConfig((config) => {
         '^/auth/logout': {
           target: process.env.VITE_API_SERVER,
           changeOrigin: true
+        },
+        // 로그인 계정 정보 API(role 확인 등): /users/* 를 백엔드로 그대로 전달
+        '^/users/.*': {
+          target: process.env.VITE_API_SERVER,
+          changeOrigin: true
         }
       }
     },

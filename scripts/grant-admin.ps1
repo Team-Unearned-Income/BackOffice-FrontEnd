@@ -18,7 +18,7 @@ setup-persistent-backend.ps1로 파일 기반 H2(jdbc:h2:file:/data/testdb)로 �
   .\scripts\grant-admin.ps1 -JdbcUrl Mem           # 인메모리 모드로 강제 지정
 #>
 param(
-    [string]$Container = 'knockin-backend',
+    [string]$Container = 'knockin-be',
     [switch]$Select,
     [ValidateSet('Auto', 'Mem', 'File')]
     [string]$JdbcUrl = 'Auto'

@@ -12,6 +12,7 @@ import lifePatternRoutes from '/src/pages/lifePattern/routes.js'
 import mailDomainRoutes from '/src/pages/mailDomain/routes.js'
 import appVersionRoutes from '/src/pages/appVersion/routes.js'
 import roomTypeRoutes from '/src/pages/roomType/routes.js'
+import roomAddOptionRoutes from '/src/pages/roomAddOption/routes.js'
 import termsRoutes from '/src/pages/terms/routes.js'
 
 // 기존 seoulland 라우트는 src/sample/ 로 분리 보관 (LNB 미노출, 라우터 미연결)
@@ -39,12 +40,18 @@ const routes = [
       ...mailDomainRoutes,
       ...appVersionRoutes,
       ...roomTypeRoutes,
+      ...roomAddOptionRoutes,
       ...termsRoutes,
     ]
   },
   {
+    path: '/forbidden',
+    name: 'Forbidden',
+    component: () => import('@/pages/error/Forbidden.vue')
+  },
+  {
     path: '/:pathMatch(.*)*',
-    component: import('@/pages/error/NotFound.vue')
+    component: () => import('@/pages/error/NotFound.vue')
   }
 ]
 

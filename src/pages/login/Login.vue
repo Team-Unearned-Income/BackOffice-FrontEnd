@@ -84,7 +84,7 @@ const ERROR_MESSAGES = {
   forbidden: '관리자(admin) 권한이 없는 계정입니다. 접근이 거부되었습니다.',
   failed: '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.',
   denied: '로그인이 취소되었습니다.',
-  unsupported: '현재는 카카오 로그인만 지원합니다.'
+  unsupported: '지원하지 않는 로그인 방식입니다.'
 }
 const errorMessage = computed(() => ERROR_MESSAGES[route.query.error] ?? '')
 
@@ -106,11 +106,12 @@ const backendOauthUrl = (provider) => {
   const targetUrl = `${window.location.origin}/auth/success`
   return `${base}/oauth2/authorization/${provider}?target_url=${encodeURIComponent(targetUrl)}`
 }
+const SUPPORTED_PROVIDERS = ['kakao', 'apple']
 const loginWith = (provider) => {
-  if (provider !== 'kakao') {
+  if (!SUPPORTED_PROVIDERS.includes(provider)) {
     return router.replace({ name: 'Login', query: { error: 'unsupported' } })
   }
-  window.location.href = backendOauthUrl('kakao') // 백엔드로 전체 리다이렉트
+  window.location.href = backendOauthUrl(provider) // 백엔드로 전체 리다이렉트
 }
 
 /**

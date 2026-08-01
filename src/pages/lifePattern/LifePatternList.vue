@@ -153,15 +153,30 @@ const openCreate = () => {
   editingPattern.value = null
   showForm.value = true
 }
-const openEdit = (row) => {
-  editingPattern.value = row
-  showForm.value = true
-}
-const onFormSave = async (data) => {
+const openEdit = async (row) => {
+  // 목록 응답엔 lifePatternDescription/preferenceDescription이 없어서 상세 조회로 보충한다.
   emitter.emit(COMMON.LOADING.SHOW)
   try {
-    if (editingPattern.value) await lifePatternApi.modify(editingPattern.value.id, data)
-    else await lifePatternApi.save(data)
+    const detail = await lifePatternApi.getDetail(row.id)
+    editingPattern.value = {
+      ...row,
+      lifePatternDescription: detail?.lifePatternDescription ?? '',
+      preferenceDescription: detail?.preferenceDescription ?? '',
+      image: detail?.image ?? null
+    }
+  } catch (e) {
+    showError(e)
+    editingPattern.value = row
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
+  showForm.value = true
+}
+const onFormSave = async (data, image) => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    if (editingPattern.value) await lifePatternApi.modify(editingPattern.value.id, data, image)
+    else await lifePatternApi.save(data, image)
     showForm.value = false
     await loadPatterns()
   } catch (e) {
