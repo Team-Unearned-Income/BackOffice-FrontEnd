@@ -104,9 +104,9 @@
     <ProcessConfirmModal
       v-model:show="showSuspend"
       title="회원을 정지하시겠어요?"
-      :message="`${member.name} (#${member.id})을 무기한 정지합니다.\n정지 즉시 앱 로그인이 불가하며, 되돌릴 수 있는 기능이 없습니다.`"
+      :message="`${member.name} (#${member.id})을 무기한 정지합니다.\n정지 즉시 앱 로그인이 불가합니다.`"
       require-reason
-      reason-label="정지 사유 (필수, 참고용 — 백엔드에 저장되지 않음)"
+      reason-label="정지 사유 (필수)"
       confirm-label="정지 처리"
       confirm-color="red"
       @confirm="onSuspendConfirm"
@@ -183,7 +183,7 @@ const showGrant = ref(false)
 const showRevoke = ref(false)
 
 /** 확인 핸들러 */
-const onSuspendConfirm = () => emit('suspend')
+const onSuspendConfirm = (reason) => emit('suspend', reason)
 const onUnsuspendConfirm = () => emit('unsuspend')
 const onGrantConfirm = () => emit('grant')
 const onRevokeConfirm = () => emit('revoke')

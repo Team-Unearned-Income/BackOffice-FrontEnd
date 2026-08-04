@@ -27,8 +27,8 @@ export const memberApi = {
   /** 회원 상세 조회 → { id, name, email, createdAt, authenticationInfoList, role, state, gender, birth, reportCount } (현재 백엔드 버그로 항상 500, 위 주석 참조) */
   getDetail: (id) => api.get(`${BASE}/${id}`).then(unwrap),
 
-  /** 회원 정지 (INACTIVE로 변경) → { updatedAt } */
-  suspend: (id) => api.patch(`${BASE}/cancel/${id}`).then(unwrap),
+  /** 회원 정지 (INACTIVE로 변경) — body { rejectReason } 필수, 실제 저장됨 → { updatedAt } */
+  suspend: (id, reason) => api.patch(`${BASE}/cancel/${id}`, { rejectReason: reason }).then(unwrap),
 
   /** 회원 정지 해제 (ACTIVE로 변경) → { updatedAt } */
   unsuspend: (id) => api.patch(`${BASE}/uncancel/${id}`).then(unwrap),

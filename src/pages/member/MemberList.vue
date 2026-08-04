@@ -197,11 +197,11 @@ const openDetail = async (row) => {
   }
 }
 
-/** 정지 (모달 사유는 백엔드가 안 받아 저장되지 않음) */
-const onSuspend = async () => {
+/** 정지 (사유 필수 — 백엔드에 실제 저장됨) */
+const onSuspend = async (reason) => {
   emitter.emit(COMMON.LOADING.SHOW)
   try {
-    await memberApi.suspend(selectedMember.value.id)
+    await memberApi.suspend(selectedMember.value.id, reason)
     showDetail.value = false
     await loadMembers()
   } catch (e) {
