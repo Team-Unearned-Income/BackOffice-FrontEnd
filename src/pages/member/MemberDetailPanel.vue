@@ -80,7 +80,7 @@
     </q-card-section>
 
     <q-separator />
-    <!-- 5. 액션 — 정지 해제 API가 없어 정지만 가능(되돌릴 수 없음) -->
+    <!-- 5. 액션 -->
     <q-card-actions align="right" class="q-px-lg q-py-md">
       <q-btn
         v-if="member.state === 'ACTIVE'"
@@ -89,6 +89,14 @@
         color="red"
         outline
         @click="showSuspend = true"
+      />
+      <q-btn
+        v-else-if="member.state === 'INACTIVE'"
+        label="정지 해제"
+        class="bg-green-1 text-bold"
+        color="green-8"
+        outline
+        @click="showUnsuspend = true"
       />
     </q-card-actions>
 
@@ -102,6 +110,14 @@
       confirm-label="정지 처리"
       confirm-color="red"
       @confirm="onSuspendConfirm"
+    />
+    <ProcessConfirmModal
+      v-model:show="showUnsuspend"
+      title="정지를 해제할까요?"
+      :message="`${member.name} (#${member.id})의 정지를 해제합니다.\n해제 즉시 앱 로그인이 다시 가능해집니다.`"
+      confirm-label="정지 해제"
+      confirm-color="dark"
+      @confirm="onUnsuspendConfirm"
     />
     <ProcessConfirmModal
       v-model:show="showGrant"
@@ -139,7 +155,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['close', 'suspend', 'grant', 'revoke'])
+const emit = defineEmits(['close', 'suspend', 'unsuspend', 'grant', 'revoke'])
 
 const statusMeta = computed(() => STATUS_META[props.member.state] ?? STATUS_UNKNOWN_META)
 const roleMeta = computed(() => ROLE_META[props.member.role] ?? ROLE_UNKNOWN_META)
@@ -162,11 +178,13 @@ const basicInfo = computed(() => [
 
 /** 모달 표시 상태 */
 const showSuspend = ref(false)
+const showUnsuspend = ref(false)
 const showGrant = ref(false)
 const showRevoke = ref(false)
 
 /** 확인 핸들러 */
 const onSuspendConfirm = () => emit('suspend')
+const onUnsuspendConfirm = () => emit('unsuspend')
 const onGrantConfirm = () => emit('grant')
 const onRevokeConfirm = () => emit('revoke')
 </script>

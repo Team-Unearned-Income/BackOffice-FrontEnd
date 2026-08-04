@@ -12,7 +12,7 @@
  *   (`ApproveType`: PENDING/ACCEPTED/REJECT)를 매핑하고 있어 필드명(`AuthenticationType`: STUDENT/COMPANY)과
  *   타입·의미가 다름. 인증 이력이 없는 회원은 null이라 안 죽지만, 인증을 제출한 회원을 조회하면
  *   상세와 동일하게 500이 날 가능성이 높음.
- * - `PATCH /bo/member/cancel/{id}`(정지) 상응하는 "정지 해제" API가 없음 — 한번 정지시키면 BO로는 되돌릴 방법이 없음.
+ * - `PATCH /bo/member/uncancel/{id}` (정지 해제) 추가됨 (QA 요청으로 백엔드 대응 완료, 2026-08 기준).
  */
 import api from '@/common/library/axios'
 
@@ -27,8 +27,11 @@ export const memberApi = {
   /** 회원 상세 조회 → { id, name, email, createdAt, authenticationInfoList, role, state, gender, birth, reportCount } (현재 백엔드 버그로 항상 500, 위 주석 참조) */
   getDetail: (id) => api.get(`${BASE}/${id}`).then(unwrap),
 
-  /** 회원 정지 (INACTIVE로 변경, 되돌리는 API 없음) → { updatedAt } */
+  /** 회원 정지 (INACTIVE로 변경) → { updatedAt } */
   suspend: (id) => api.patch(`${BASE}/cancel/${id}`).then(unwrap),
+
+  /** 회원 정지 해제 (ACTIVE로 변경) → { updatedAt } */
+  unsuspend: (id) => api.patch(`${BASE}/uncancel/${id}`).then(unwrap),
 
   /** 회원 권한 수정 — body { memberRole: 'ADMIN' | 'USER' } → { updatedAt } */
   setAuth: (id, memberRole) => api.patch(`${BASE}/auth/${id}`, { memberRole }).then(unwrap)
