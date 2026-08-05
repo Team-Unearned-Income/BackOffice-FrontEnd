@@ -8,6 +8,7 @@ import quasarLang from 'quasar/lang/ko-KR'
 import { Quasar, Dialog } from 'quasar'
 import globalProperty from '@/plugin/globalProperty.js'
 import globalComponent from '@/plugin/globalComponent.js'
+import VueDOMPurifyHTML from 'vue-dompurify-html'
 import mitt from 'mitt'
 
 import router, { setRouterBeforeEach } from './router'
@@ -26,6 +27,7 @@ app
   .use(router)
   .use(globalProperty)
   .use(globalComponent)
+  .use(VueDOMPurifyHTML)
   .use(Quasar, {
     lang: quasarLang,
     plugins: {
