@@ -49,13 +49,22 @@
             <q-toggle v-model="form.isRequired" label="필수 동의 항목" />
           </div>
         </div>
-        <div class="field-label q-mb-xs">내용</div>
-        <q-editor
-          v-model="form.contents"
-          :toolbar="[['bold', 'italic'], ['link']]"
-          min-height="160px"
-          placeholder="약관 전문을 입력해주세요"
-        />
+        <div class="field-label q-mb-xs">내용 (마크다운 문법 지원: **굵게**, *기울임*, [링크](url), - 목록 등)</div>
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-md-6">
+            <q-input
+              v-model="form.contents"
+              type="textarea"
+              outlined
+              autogrow
+              input-style="min-height: 160px"
+              placeholder="약관 전문을 마크다운 문법으로 입력해주세요"
+            />
+          </div>
+          <div class="col-12 col-md-6">
+            <div v-dompurify-html="renderMarkdown(form.contents)" class="preview-box" />
+          </div>
+        </div>
         <div class="row justify-end q-gutter-sm q-mt-md">
           <q-btn label="취소" color="grey-7" outline @click="closeForm" />
           <template v-if="editingId">
@@ -83,11 +92,7 @@
           <q-btn v-close-popup flat round dense icon="close" />
         </q-card-section>
         <q-separator />
-        <q-card-section class="terms-body q-px-lg">
-          <!-- 관리자가 q-editor로 작성한 약관 본문 HTML (BO 내부 신뢰 콘텐츠) -->
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div v-html="viewing?.contents" />
-        </q-card-section>
+        <q-card-section v-dompurify-html="renderMarkdown(viewing?.contents)" class="terms-body q-px-lg" />
       </q-card>
     </q-dialog>
 
@@ -113,6 +118,7 @@ import ProcessConfirmModal from '@/components/modal/ProcessConfirmModal.vue'
 import AlarmDialog from '@/components/dialog/AlarmDialog.vue'
 import COMMON from '@/constants/commonConstatns'
 import { termsApi } from '@/service/bo/terms'
+import { renderMarkdown } from '@/utils/markdown'
 import { STATUS_META, badgeHtml } from './termsMeta'
 
 const props = defineProps({
@@ -313,5 +319,16 @@ onMounted(() => {
   max-height: 60vh;
   overflow: auto;
   line-height: 1.6;
+}
+
+.preview-box {
+  min-height: 160px;
+  max-height: 40vh;
+  overflow: auto;
+  padding: 8px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.24);
+  border-radius: 4px;
+  line-height: 1.6;
+  font-size: 0.85rem;
 }
 </style>

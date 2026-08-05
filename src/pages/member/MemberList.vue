@@ -58,6 +58,7 @@
         :member="selectedMember"
         @close="showDetail = false"
         @suspend="onSuspend"
+        @unsuspend="onUnsuspend"
         @grant="onGrant"
         @revoke="onRevoke"
       />
@@ -196,11 +197,25 @@ const openDetail = async (row) => {
   }
 }
 
-/** 정지 — 정지 해제 API가 없어 되돌릴 수 없음 (모달 사유는 백엔드가 안 받아 저장되지 않음) */
-const onSuspend = async () => {
+/** 정지 (사유 필수 — 백엔드에 실제 저장됨) */
+const onSuspend = async (reason) => {
   emitter.emit(COMMON.LOADING.SHOW)
   try {
-    await memberApi.suspend(selectedMember.value.id)
+    await memberApi.suspend(selectedMember.value.id, reason)
+    showDetail.value = false
+    await loadMembers()
+  } catch (e) {
+    showError(e)
+  } finally {
+    emitter.emit(COMMON.LOADING.HIDE)
+  }
+}
+
+/** 정지 해제 */
+const onUnsuspend = async () => {
+  emitter.emit(COMMON.LOADING.SHOW)
+  try {
+    await memberApi.unsuspend(selectedMember.value.id)
     showDetail.value = false
     await loadMembers()
   } catch (e) {
