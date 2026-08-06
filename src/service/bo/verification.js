@@ -34,8 +34,8 @@ export const verificationApi = {
   /** 인증 승인 → { updatedAt } */
   approve: (id) => api.patch(`${BASE}/wait/${id}/approve`).then(unwrap),
 
-  /** 인증 반려 → { updatedAt } */
-  reject: (id) => api.patch(`${BASE}/wait/${id}/cancel`).then(unwrap)
+  /** 인증 반려 (사유 필수) → { updatedAt } */
+  reject: (id, rejectReason) => api.patch(`${BASE}/wait/${id}/cancel`, { rejectReason }).then(unwrap)
 }
 
 export default verificationApi

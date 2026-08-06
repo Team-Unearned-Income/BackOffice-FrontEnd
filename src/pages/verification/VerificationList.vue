@@ -242,15 +242,12 @@ const onApprove = async () => {
   }
 }
 
-/**
- * 반려 처리 — 위와 동일하게 id 이슈 영향 받음
- * 반려 사유는 모달에서 입력받지만 `PATCH .../wait/{id}/cancel`이 별도 body를 받지 않아 백엔드로 전달되지 않음
- */
-const onReject = async () => {
+/** 반려 처리 — 위와 동일하게 id 이슈 영향 받음 */
+const onReject = async (reason) => {
   const r = selectedRequest.value
   emitter.emit(COMMON.LOADING.SHOW)
   try {
-    await verificationApi.reject(r.id)
+    await verificationApi.reject(r.id, reason)
     selectedRequest.value = null
     await fetchAll()
   } catch (e) {
