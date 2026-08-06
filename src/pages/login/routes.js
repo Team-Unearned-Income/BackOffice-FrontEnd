@@ -12,13 +12,13 @@ const routes = [
     component: () => import('./SocialCallback.vue')
   },
   {
-    // 카카오 웹 JS SDK 로그인 콜백 (카카오 콘솔 Redirect URI: /kakao-login) — 방식 A(카카오 로그인 활성 플로우)
+    // 카카오 웹 JS SDK 로그인 콜백 (카카오 콘솔 Redirect URI: /kakao-login) — 방식 A(미사용)
     path: '/kakao-login',
     name: 'KakaoLoginCallback',
     component: () => import('./KakaoLoginCallback.vue')
   },
   {
-    // 백엔드 OAuth 로그인 성공 복귀 (백엔드 app.client-success-url = ${client-url}/auth/success) — 방식 B(Apple 등 방식 A 미지원 provider용)
+    // 백엔드 OAuth 로그인 성공 복귀 (백엔드 app.client-success-url = ${client-url}/auth/success)
     path: '/auth/success',
     name: 'AuthSuccess',
     component: () => import('./KakaoSuccess.vue')

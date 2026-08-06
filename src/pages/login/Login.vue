@@ -72,7 +72,6 @@ import { computed, inject, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import COMMON from '@/constants/commonConstatns.js'
 import { useAuthStore } from '@/stores/auth'
-import { startKakaoWebLogin } from '@/service/auth/kakaoWebSdk'
 
 const emitter = inject('emitter')
 const route = useRoute()
@@ -108,20 +107,11 @@ const backendOauthUrl = (provider) => {
   return `${base}/oauth2/authorization/${provider}?target_url=${encodeURIComponent(targetUrl)}`
 }
 const SUPPORTED_PROVIDERS = ['kakao', 'apple']
-const loginWith = async (provider) => {
+const loginWith = (provider) => {
   if (!SUPPORTED_PROVIDERS.includes(provider)) {
     return router.replace({ name: 'Login', query: { error: 'unsupported' } })
   }
-  if (provider === 'kakao') {
-    // 카카오는 방식 A(웹 JS SDK) → /kakao-login(KakaoLoginCallback.vue)에서 deleteInfo 등 후처리
-    try {
-      await startKakaoWebLogin()
-    } catch {
-      router.replace({ name: 'Login', query: { error: 'failed' } })
-    }
-    return
-  }
-  window.location.href = backendOauthUrl(provider) // Apple 등은 방식 B(백엔드 OAuth)로 전체 리다이렉트
+  window.location.href = backendOauthUrl(provider) // 백엔드로 전체 리다이렉트
 }
 
 /**
