@@ -4,12 +4,6 @@
       <div class="text-center q-mb-lg">
         <div class="brand text-h4 text-bold">KNOCK-IN</div>
         <div class="text-subtitle2 text-grey-7 q-mt-xs">백오피스 관리자</div>
-        <div
-          v-if="envProfile !== 'production'"
-          class="dev-banner text-red text-caption text-bold q-mt-sm"
-        >
-          {{ envProfile === 'development' ? '로컬' : '개발' }} 환경입니다 (접속 주소 확인)
-        </div>
       </div>
 
       <q-banner v-if="errorMessage" dense rounded class="bg-red-1 text-red-9 q-mb-md">
@@ -37,7 +31,7 @@
       </div>
 
       <!-- 개발용 토큰 주입 로그인 (production 미노출) -->
-      <div v-if="envProfile !== 'production'" class="dev-login q-mt-lg">
+      <!--div v-if="envProfile !== 'production'" class="dev-login q-mt-lg">
         <q-separator class="q-mb-md" />
         <div class="text-caption text-grey-7 q-mb-xs">개발용 · accessToken 직접 주입</div>
         <q-input
@@ -58,7 +52,7 @@
           :disable="!devToken.trim()"
           @click="loginWithDevToken"
         />
-      </div>
+      </div-->
 
       <div class="text-caption text-grey-6 text-center q-mt-lg">
         ※ admin 권한이 부여된 계정만 접속할 수 있으며, 주요 활동은 로그로 기록됩니다.
