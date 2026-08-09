@@ -51,7 +51,12 @@
     </PageTable>
 
     <!-- 추가/수정 폼 모달 -->
-    <LifePatternFormModal v-model:show="showForm" :pattern="editingPattern" @save="onFormSave" />
+    <LifePatternFormModal
+      v-model:show="showForm"
+      :pattern="editingPattern"
+      :next-sort="nextSort"
+      @save="onFormSave"
+    />
 
     <!-- 삭제 확인 모달 (Soft Delete: 유저 응답 보존, 앱 비노출) -->
     <ProcessConfirmModal
@@ -148,6 +153,12 @@ const clearSearch = () => {
 /** 추가/수정 폼 모달 */
 const showForm = ref(false)
 const editingPattern = ref(null)
+
+/** 추가 시 우선순위 기본값 — 기존 최대값 + 1 (필터와 무관하게 전체 기준) */
+const nextSort = computed(() => {
+  const sorts = allPatterns.value.map((p) => p.sort).filter((s) => Number.isFinite(s))
+  return sorts.length ? Math.max(...sorts) + 1 : 1
+})
 
 const openCreate = () => {
   editingPattern.value = null
