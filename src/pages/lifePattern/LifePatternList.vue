@@ -101,7 +101,7 @@ const tableModel = ref({
   selected: [],
   filterAndSearchData: {},
   header: [
-    { name: 'sort', label: '순서', field: 'sort', align: 'center', tooltip: false },
+    { name: 'sort', label: '순서', field: 'sort', align: 'center', tooltip: false, format: (v) => `<span>${v ?? '-'}</span>` },
     { name: 'name', label: '항목명', field: 'name', align: 'left', tooltip: false },
     { name: 'type', label: '유형', field: 'type', align: 'center', tooltip: false, format: (v) => badgeHtml(TYPE_META[v]) },
     { name: 'detail', label: '선택지', field: 'detail', align: 'left', tooltip: false, format: (v, row) => `<span>${detailText(row)}</span>` },
@@ -160,6 +160,7 @@ const openEdit = async (row) => {
     const detail = await lifePatternApi.getDetail(row.id)
     editingPattern.value = {
       ...row,
+      sort: detail?.sort ?? row.sort ?? 1,
       lifePatternDescription: detail?.lifePatternDescription ?? '',
       preferenceDescription: detail?.preferenceDescription ?? '',
       image: detail?.image ?? null
