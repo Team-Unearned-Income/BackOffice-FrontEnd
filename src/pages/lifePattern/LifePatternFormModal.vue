@@ -99,6 +99,11 @@ const props = defineProps({
   pattern: {
     type: Object,
     default: null
+  },
+  /** 추가 시 사용할 우선순위 기본값(기존 최대값 + 1) */
+  nextSort: {
+    type: Number,
+    default: 1
   }
 })
 
@@ -120,7 +125,7 @@ const initForm = () => {
   type.value = p?.type ?? 'SCALE'
   name.value = p?.name ?? ''
   image.value = null
-  sort.value = p?.sort ?? 1
+  sort.value = p?.sort ?? props.nextSort
   lifePatternDescription.value = p?.lifePatternDescription ?? ''
   preferenceDescription.value = p?.preferenceDescription ?? ''
   details.value = p?.details?.length

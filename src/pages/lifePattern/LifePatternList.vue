@@ -51,7 +51,12 @@
     </PageTable>
 
     <!-- 추가/수정 폼 모달 -->
-    <LifePatternFormModal v-model:show="showForm" :pattern="editingPattern" @save="onFormSave" />
+    <LifePatternFormModal
+      v-model:show="showForm"
+      :pattern="editingPattern"
+      :next-sort="nextSort"
+      @save="onFormSave"
+    />
 
     <!-- 삭제 확인 모달 (Soft Delete: 유저 응답 보존, 앱 비노출) -->
     <ProcessConfirmModal
@@ -101,7 +106,7 @@ const tableModel = ref({
   selected: [],
   filterAndSearchData: {},
   header: [
-    { name: 'sort', label: '순서', field: 'sort', align: 'center', tooltip: false },
+    { name: 'sort', label: '순서', field: 'sort', align: 'center', tooltip: false, format: (v) => `<span>${v ?? '-'}</span>` },
     { name: 'name', label: '항목명', field: 'name', align: 'left', tooltip: false },
     { name: 'type', label: '유형', field: 'type', align: 'center', tooltip: false, format: (v) => badgeHtml(TYPE_META[v]) },
     { name: 'detail', label: '선택지', field: 'detail', align: 'left', tooltip: false, format: (v, row) => `<span>${detailText(row)}</span>` },
@@ -149,6 +154,12 @@ const clearSearch = () => {
 const showForm = ref(false)
 const editingPattern = ref(null)
 
+/** 추가 시 우선순위 기본값 — 기존 최대값 + 1 (필터와 무관하게 전체 기준) */
+const nextSort = computed(() => {
+  const sorts = allPatterns.value.map((p) => p.sort).filter((s) => Number.isFinite(s))
+  return sorts.length ? Math.max(...sorts) + 1 : 1
+})
+
 const openCreate = () => {
   editingPattern.value = null
   showForm.value = true
@@ -160,6 +171,7 @@ const openEdit = async (row) => {
     const detail = await lifePatternApi.getDetail(row.id)
     editingPattern.value = {
       ...row,
+      sort: detail?.sort ?? row.sort ?? 1,
       lifePatternDescription: detail?.lifePatternDescription ?? '',
       preferenceDescription: detail?.preferenceDescription ?? '',
       image: detail?.image ?? null

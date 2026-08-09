@@ -16,11 +16,11 @@ export const lifePatternApi = {
   /**
    * 생활패턴 목록 조회
    * @param {{ page?: number, size?: number, sort?: string[] }} params
-   * @returns {Promise<{ patterns: Array<{ id, name, type, details: Array<{ values, description }> }> }>}
+   * @returns {Promise<{ patterns: Array<{ id, name, type, sort, details: Array<{ values, description }> }> }>}
    */
   getList: (params) => api.get(BASE, { params }).then(unwrap),
 
-  /** 생활패턴 상세 조회 → { id, name, image, type, details: [{ values, description }] } */
+  /** 생활패턴 상세 조회 → { id, name, image, type, sort, details: [{ values, description }] } */
   getDetail: (id) => api.get(`${BASE}/${id}`).then(unwrap),
 
   /**
