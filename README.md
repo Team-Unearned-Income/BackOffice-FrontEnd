@@ -1,34 +1,59 @@
-# seoulland_admin_web
+# Knock-in BO Front-End
 
-# 환경구성
+Knock-in 백오피스(BO) 프론트엔드. 아래 순서대로 따라오면 **로컬 PC에서 BO 화면 + 로컬 백엔드(Docker)** 를 붙여서 카카오 로그인부터 실제 화면까지 테스트할 수 있다.
 
-## 커밋 메시지 템플릿 적용
+---
 
-서울랜드 커밋 메시지 가이드라인 파일을 기본 커밋 메시지 템플릿으로 사용할 수 있도록 아래 명령을 실행.
+## 0. 사전 준비물
 
+| 항목 | 비고 |
+| --- | --- |
+| Node.js 20.x | `node -v` 로 확인. (nvm 등으로 20 버전대 사용 권장) |
+| npm | Node.js 설치 시 함께 설치됨 |
+| Git | — |
+| Docker Desktop | 로컬 백엔드(knockin-backend)를 컨테이너로 띄우는 데 필요. 설치 후 **켜둔 상태**여야 함 |
+| PowerShell | 아래 `.ps1` 스크립트 실행용 (Windows 기본 제공) |
+| 카카오 계정 | 로그인 테스트용 실제 카카오 계정 1개 (소셜 로그인만 지원, 별도 ID/PW 없음) |
+
+---
+
+## 1. 최초 셋업 (1회만)
+
+```bash
+git clone <이 저장소 URL>
+cd BackOffice-FrontEnd
+npm install
 ```
+
+### 커밋 메시지 템플릿 적용 (선택)
+
+```bash
 git config commit.template .gitmessage
 ```
 
-## F/E 실행
+### 로컬 환경변수 파일(`.env`) 생성
 
-npm run dev
+`.env`는 `.gitignore`에 포함되어 있어 클론 직후에는 존재하지 않는다. 프로젝트 루트에 아래 내용으로 **직접 생성**한다 (로컬 백엔드가 `8080` 포트로 뜨는 걸 기준으로 함).
 
-
-## 개발 중 어드민 role 적용방법
 ```
-경로 맞추고 .\scripts\grant-admin.ps1 <-- PowerShell 에서 실행
+# .env — 로컬 전용, 커밋되지 않음
+VITE_API_SERVER=http://127.0.0.1:8080
+VITE_API_SERVER_GENERATE=
+VITE_API_BASE_URL=
+VITE_NAVER_CLIENT_ID=
 ```
 
-## 로컬 백엔드(knockin-backend) 최초 셋업
+> `VITE_API_SERVER`는 `vite.config.js`의 `/bo/*`, `/users/*`, `/auth/logout` 프록시 타깃으로 쓰인다. 실제 카카오 로그인은 프론트가 아니라 **백엔드가 처리**하므로(서버 사이드 OAuth), 이 단계에서 카카오 개발자 콘솔 키(JS 키/REST 키)는 필요 없다.
 
-프로젝트에 처음 들어왔을 때(또는 컨테이너를 새로 만들 때) 아래 순서대로 진행한다.
+---
+
+## 2. 로컬 백엔드(knockin-backend) 셋업
 
 1. **Docker Desktop 실행**
    설치 후 Docker Desktop을 켜둔다 (백그라운드 실행 상태 확인).
 
 2. **로컬 백엔드 컨테이너 셋업 — 최초 1회만**
-   ```
+   ```powershell
    .\scripts\setup-persistent-backend.ps1
    ```
    `knockin-backend` 컨테이너를 파일 기반 H2(볼륨 마운트) + `--restart unless-stopped`로 생성한다.
@@ -36,26 +61,51 @@ npm run dev
 
    **평소엔 Docker Desktop만 켜두면 컨테이너가 자동으로 같이 뜬다** (`--restart unless-stopped`).
    단, `docker stop knockin-backend` 또는 Docker Desktop UI에서 **직접 컨테이너를 멈춘 적이 있다면** 다음번엔 자동으로 안 켜지므로 수동으로 한 번 켜줘야 한다.
-   ```
+   ```powershell
    docker start knockin-backend
    ```
 
-3. **카카오 로그인**
-   `npm run dev`로 프런트엔드를 띄우고, 로그인 화면에서 카카오 소셜 로그인으로 계정을 생성한다.
+---
 
-4. **어드민 role 부여 — 최초 1회만 (데이터 초기화 전까지 유지)**
+## 3. 프론트엔드 실행 + 로그인 + 관리자 권한 부여
+
+1. **F/E 실행**
+   ```bash
+   npm run dev
    ```
+   `http://localhost:5173`로 뜬다 (백엔드 `app.client-url` 기본값과 맞춘 고정 포트).
+
+2. **카카오 로그인으로 계정 생성**
+   로그인 화면에서 "카카오로 로그인" 클릭 → 실제 카카오 계정으로 로그인한다. (최초 로그인 시 `role=user`로 계정이 생성되며, 이 상태로는 "권한 없음" 에러가 뜬다 — 정상.)
+
+3. **어드민 role 부여 — 최초 1회만 (데이터 초기화 전까지 유지)**
+   ```powershell
    .\scripts\grant-admin.ps1
    ```
    컨테이너가 파일 모드(persistent)인지 인메모리 모드인지 자동으로 감지해서 접속하므로 별도 옵션 없이 그냥 실행하면 된다.
    완료 후 브라우저에서 로그아웃 → 카카오로 재로그인하면 BO 접근 권한이 반영된다.
    (`setup-persistent-backend.ps1`을 안 쓰고 기본 인메모리 컨테이너를 그대로 쓰는 경우엔 컨테이너 재시작마다 매번 다시 실행해야 한다. 자동 감지가 안 맞으면 `-JdbcUrl File` / `-JdbcUrl Mem`으로 강제 지정 가능.)
 
-## 운영 도메인(bo.knock-in.com) 로그인 플로우 로컬 테스트
+---
+
+## 4. 평소 개발/테스트 시작 절차 (2회차부터)
+
+최초 셋업이 끝났다면, 이후로는 아래 두 가지만 하면 된다.
+
+1. Docker Desktop 켜기 (컨테이너 자동 기동 — 직접 `docker stop`한 적 있으면 `docker start knockin-backend`)
+2. `npm run dev`
+
+계정/admin 권한은 데이터가 유지되는 한(볼륨을 지우지 않는 한) 다시 설정할 필요 없다.
+
+---
+
+## 5. 운영 도메인(bo.knock-in.com) 로그인 플로우 로컬 테스트 (선택, 고급)
 
 BE를 운영 서버에 올리지 않고, 로컬 PC 한 대에서 `https://bo.knock-in.com` 실제 도메인으로 접속해서
 카카오 로그인 전체 흐름(Referer 기반 BO 판별 → 리다이렉트 대상 → CORS)을 그대로 검증하는 방법.
 **내 PC의 hosts 파일만 바꾸는 거라 다른 팀원 환경엔 영향 없고, 운영 서버(api.knock-in.com)도 전혀 안 건드린다.**
+
+일반적인 화면/기능 테스트에는 필요 없고, **OAuth Referer 판별 로직 자체를 검증할 때만** 필요하다.
 
 ### 왜 필요한가
 
@@ -142,3 +192,14 @@ BO와 소비자 앱이 백엔드 인스턴스를 공유해서, `app.client-url` 
    (볼륨은 그대로라 데이터 안 날아감.)
 5. **임시 파일 정리**: `.env.botest`, `dist/` 삭제 (둘 다 gitignore 대상이라 커밋 걱정은 없음).
 6. **Caddy 자체를 지우고 싶으면**: `winget uninstall CaddyServer.Caddy` (안 지워도 무해하게 남아있을 뿐이라 필수는 아님).
+
+---
+
+## 6. 트러블슈팅
+
+- **`docker info` 실패 / "Docker Desktop이 실행 중이지 않습니다"** → Docker Desktop 앱을 먼저 켜고 재시도.
+- **카카오 로그인 후 "권한 없음" 에러** → 정상. 아직 `grant-admin.ps1`을 실행하지 않았거나, 실행 후 재로그인을 안 한 경우다. 로그아웃 후 다시 카카오로 로그인.
+- **`grant-admin.ps1` 실행 시 "업데이트된 회원이 없습니다"** → 카카오 로그인으로 계정을 먼저 만든 뒤 다시 실행.
+- **`grant-admin.ps1` 접속 실패 (File/Mem 둘 다 시도)** → `docker ps`로 `knockin-backend` 컨테이너가 떠 있는지 확인. `setup-persistent-backend.ps1`로 만든 컨테이너가 맞는지도 확인.
+- **컨테이너를 지우고 다시 만들었더니 admin 권한이 풀림** → 정상 (데이터 초기화됨). `grant-admin.ps1`을 다시 실행.
+- **`npm run dev` 후 API 요청이 404/CORS 에러** → 프로젝트 루트에 `.env` 파일이 있는지, `VITE_API_SERVER=http://127.0.0.1:8080`으로 설정돼 있는지 확인 (1단계 참고).
